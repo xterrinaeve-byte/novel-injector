@@ -28,6 +28,9 @@ import {
     promptManager,
 } from '/scripts/openai.js';
 
+import { Popup, POPUP_RESULT } from '/scripts/popup.js';
+import { getPresetManager } from '/scripts/preset-manager.js';
+
 import {
     NI_NOVEL_LIBRARY_PAGE_SIZE_DEFAULT,
     createStorageController,
@@ -135,6 +138,11 @@ import {
 } from './lib/cleaning-system.js';
 
 import {
+    createCleanRequestTools,
+    createCleanRequestView,
+} from './lib/clean-request.js';
+
+import {
     PersistedRateQueue,
     concurrencyLimit,
     createChatCompletionResponseTools,
@@ -161,6 +169,8 @@ import {
 
 import {
     CLEAN_PROMPT,
+    CLEAN_SOURCE_BOUNDARY_PROMPT,
+    CLEAN_EXECUTION_PROMPT,
     DEV_PROMPT,
     GLOBAL_PROMPT,
     GLOBAL_TAIL_PROMPT,
@@ -264,7 +274,8 @@ const DEFAULT_SETTINGS = {
     devAutoUpdateEvery: 10,
     devManualMsgCount: 10,
     rawInjMode: "nodes",  // "nodes"=剧情节点 | "compressed"=压缩原文
-    globalPromptSource: 'builtin', // builtin=内置提示词 tavern=跟随酒馆主预设 none=不使用
+    globalPromptSource: 'builtin', // builtin=内置提示词 tavern=酒馆预设 none=不使用
+    globalPromptPresetName: '', // 空值跟随前台；指定名称时读取该预设已保存的提示词
     globalPrompt: GLOBAL_PROMPT,
     globalTailPrompt: GLOBAL_TAIL_PROMPT,
     globalHeadInjPos: 2,
@@ -522,6 +533,10 @@ function niUpgradeRoleplayPrompt(cfg = extension_settings[EXT_NAME] || {}) {
 function niLoadSettings() {
     extension_settings[EXT_NAME] = extension_settings[EXT_NAME] || {};
     const saved = extension_settings[EXT_NAME];
+    if (Object.hasOwn(saved, 'cleanPromptMode')) {
+        delete saved.cleanPromptMode;
+        saveSettingsDebounced();
+    }
     if (Object.prototype.hasOwnProperty.call(saved, 'styleInjEnabled')) {
         delete saved.styleInjEnabled;
         saveSettingsDebounced();
@@ -734,6 +749,7 @@ function niSaveSettings({ scheduleAutosave = true } = {}) {
     } else {
         cfg.globalPromptSource = niNormalizeGlobalPromptSource(cfg.globalPromptSource);
     }
+    cfg.globalPromptPresetName = q('#ni-global-preset-name')?.value ?? cfg.globalPromptPresetName ?? '';
     const _gp = q('#ni-global-pt-content')?.value;
     cfg.globalPrompt = (_gp && _gp.trim()) ? _gp : (extension_settings[EXT_NAME]?.globalPrompt ?? GLOBAL_PROMPT);
     cfg.globalTailPrompt = q('#ni-global-tail-pt-content')?.value ?? (extension_settings[EXT_NAME]?.globalTailPrompt ?? GLOBAL_TAIL_PROMPT);
@@ -1030,6 +1046,8 @@ function syncSettingsToUI() {
     const globalTailPtEl = q('#ni-global-tail-pt-content');
     if (globalTailPtEl) globalTailPtEl.value = cfg.globalTailPrompt ?? GLOBAL_TAIL_PROMPT;
     niSyncGlobalPromptSourceUI(cfg);
+    niCleanRequestView.initialize();
+    niCleanRequestView.invalidatePreview();
     // 修复：初始化时同步渲染小说库，不依赖导航按钮点击
     niRenderNovelLibrary();
     // 同步穿书模式状态文字
@@ -1315,11 +1333,32 @@ function niSyncGlobalPromptSourceUI(cfg = extension_settings[EXT_NAME] || {}) {
     if (noneEl) noneEl.checked = source === 'none';
     const builtinBox = q('#ni-global-builtin-box');
     if (builtinBox) builtinBox.style.display = source === 'builtin' ? 'block' : 'none';
+    const tavernBox = q('#ni-global-tavern-box');
+    if (tavernBox) tavernBox.style.display = source === 'tavern' ? 'block' : 'none';
+    const select = q('#ni-global-preset-name');
+    if (!select) return;
+    const names = niGetTavernPresetNames();
+    const selected = typeof cfg.globalPromptPresetName === 'string' ? cfg.globalPromptPresetName : '';
+    const missing = selected && !names.includes(selected);
+    select.innerHTML = '<option value="">跟随前台当前预设</option>'
+        + names.map(name => `<option value="${niEscAttr(name)}">${niEscHtml(name)}</option>`).join('')
+        + (missing ? `<option value="${niEscAttr(selected)}" disabled>${niEscHtml(selected)}（已不存在）</option>` : '');
+    select.value = selected;
+    const hint = q('#ni-global-preset-hint');
+    if (hint) hint.textContent = missing
+        ? '所选预设已不存在，请重新选择；插件不会自动改用其他预设。'
+        : selected
+            ? '使用此预设已保存的提示词，前台切换预设不影响插件。接口和模型仍使用插件配置。'
+            : '随前台当前预设变化；选择具体预设可固定插件使用的预设，不影响前台 RP。';
 }
 
 const {
     niBuildTavernPresetMessages,
+    niBuildTavernCleanMessages,
+    niGetTavernPresetNames,
 } = createTavernPresetMessageTools({
+    getSettings: () => extension_settings[EXT_NAME] || {},
+    getPresetManager: () => getPresetManager('openai'),
     getPromptManager: () => promptManager,
     getGlobalVariables: () => extension_settings?.variables?.global || {},
     substituteParams,
@@ -1364,6 +1403,21 @@ const {
     getCurrentAbortController: () => S._currentAbortController,
     setCurrentAbortController: controller => { S._currentAbortController = controller; },
     fetch,
+});
+
+const niCleanRequests = createCleanRequestTools({
+    getSettings: () => extension_settings[EXT_NAME] || {},
+    defaultSettings: DEFAULT_SETTINGS,
+    boundaryPrompt: CLEAN_SOURCE_BOUNDARY_PROMPT,
+    executionPrompt: CLEAN_EXECUTION_PROMPT,
+    buildTavernCleanMessages: niBuildTavernCleanMessages,
+    applyGlobalPromptsToMessages: niApplyGlobalPromptsToMessages,
+    sendPreparedRequest: callCleanApi,
+});
+const niCleanRequestView = createCleanRequestView({
+    q, escapeHtml: niEscHtml, requests: niCleanRequests,
+    getTask: i => niBuildCleanTask(i),
+    getNovelKey: () => S.novelKey || '',
 });
 
 const { niRequestEmbeddings, embedText } = createEmbeddingClient({
@@ -1789,6 +1843,7 @@ const {
     chunkStatStyle,
     setChunkStat,
     niCleanConcurrencyLimit,
+    niBuildCleanTask,
     niBuildCleanMessages,
     niRebuildStructuredDataFromChunks,
     niProcessCleanChunk,
@@ -1810,6 +1865,13 @@ const {
     q,
     sv,
     alert,
+    confirmRestart: async ({ done, total }) => (await Popup.show.confirm(
+        '重新清洗当前小说？',
+        `<p>当前已完成 ${done}/${total} 段。</p>`
+        + '<p>重新清洗会清空当前小说的压缩正文、剧情节点、角色资料、阶段划分与向量索引，并从第一段重新调用 API。</p>'
+        + '<p>如果只是补齐失败或未完成的分段，请取消后点击“续跑清洗”。</p>',
+        { okButton: '确认重新清洗', cancelButton: '取消', defaultResult: POPUP_RESULT.NEGATIVE },
+    )) === POPUP_RESULT.AFFIRMATIVE,
     toastr: globalThis.toastr,
     fingerprintArrayBuffer: niFingerprintArrayBuffer,
     resetNovelWorkspace: niResetNovelWorkspace,
@@ -1831,6 +1893,9 @@ const {
     rebuildStageMapFromPlotStageIdx,
     syncSubPlotStageAssignments: niSyncSubPlotStageAssignments,
     callCleanApi,
+    prepareCleanRequest: niCleanRequests.prepareCleanRequest,
+    callCleanTaskApi: niCleanRequests.callCleanTaskApi,
+    finishCleanRequest: niCleanRequests.finishCleanRequest,
     capturePlotCheckpointMemory,
     captureCharacterMemory,
     renderPlots,
@@ -3648,8 +3713,16 @@ jQuery(async () => {
 
     // 上传区点击 / 拖拽
     $app.on('click', '#ni-uz', () => document.getElementById('ni-fi').click());
-    $app.on('dragover', '#ni-uz', e => e.preventDefault());
-    $app.on('drop', '#ni-uz', e => { e.preventDefault(); niOnDrop(e.originalEvent); });
+    // 上传区接管拖拽，避免冒泡到酒馆 body 上的角色卡导入器。
+    $app.on('dragover', '#ni-uz', e => {
+        e.preventDefault();
+        e.stopPropagation();
+    });
+    $app.on('drop', '#ni-uz', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        niOnDrop(e.originalEvent);
+    });
     $app.on('change', '#ni-fi', function() { niOnFile(this); });
 
     // 清洗区按钮
@@ -3667,6 +3740,12 @@ jQuery(async () => {
         const i = parseInt(this.dataset.chunkIdx);
         if (!isNaN(i)) niRunSingleChunk(i);
     });
+    $app.on('click', '.ni-chunk-preview-btn', function() {
+        const i = Number(this.dataset.chunkIdx);
+        if (Number.isInteger(i) && i >= 0) niCleanRequestView.showPreview(i);
+    });
+    $app.on('input change', '#ni-clean-api input, #ni-clean-api select, #ni-pt-content, #ni-global-pb input, #ni-global-pb select, #ni-global-pb textarea, [id^="ni-global-head-inj-"], [id^="ni-global-tail-inj-"]', () => niCleanRequestView.invalidatePreview());
+    $app.on('click', '#ni-pt-reset, #ni-global-pt-reset, #ni-global-tail-pt-reset, #ni-stream-btn', () => niCleanRequestView.invalidatePreview());
     $app.on('input', '#ni-chunk-kb', () => niOnKbChange());
     $app.on('input', '#ni-api-timeout', () => niSaveSettings());
     $app.on('input', '#ni-rate-limit',   () => niSaveSettings());
@@ -4656,6 +4735,16 @@ jQuery(async () => {
 
     // 全局提示词面板
     $app.on('click', '#ni-global-prompt-btn', () => niToggleGlobalPrompt());
+    $app.on('change', '#ni-global-preset-name', function() {
+        extension_settings[EXT_NAME].globalPromptPresetName = this.value;
+        niSaveSettings();
+        niSyncGlobalPromptSourceUI();
+    });
+    $app.on('focus', '#ni-global-preset-name', () => niSyncGlobalPromptSourceUI());
+    $app.on('click', '#ni-global-preset-refresh', () => {
+        niSyncGlobalPromptSourceUI();
+        niCleanRequestView.invalidatePreview();
+    });
     $app.on('change', '#ni-global-source-tavern, #ni-global-source-builtin, #ni-global-source-none', function() {
         if (!this.checked) {
             this.checked = true;

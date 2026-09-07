@@ -1091,9 +1091,25 @@
 
 /* ---- Chunk List ----*/
 .ni-chunk-list { display: flex; flex-direction: column; gap: 5px; max-height: 150px; overflow-y: auto; }
-.ni-chunk-row { display: flex; align-items: center; gap: 8px; padding: 7px 9px; border: .5px solid var(--color-border-tertiary); border-radius: 4px; background: var(--color-background-secondary); flex-shrink: 0; }
+.ni-chunk-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 7px 9px; border: .5px solid var(--color-border-tertiary); border-radius: 4px; background: var(--color-background-secondary); flex-shrink: 0; }
 .ni-chunk-run-btn { margin-left: auto; flex-shrink: 0; font-size: 11px; padding: 2px 8px; border-radius: 4px; border: .5px solid var(--color-border-secondary); background: transparent; color: var(--color-text-secondary); cursor: pointer; transition: background .12s, color .12s; white-space: nowrap; }
 .ni-chunk-run-btn:hover { background: var(--ni-primary, var(--color-primary, #A0445E)); color: var(--ni-primary-on, #fff); border-color: transparent; }
+.ni-chunk-preview-btn { flex-shrink: 0; font-size: 11px; padding: 2px 4px; border: none; background: transparent; color: var(--color-text-secondary); cursor: pointer; white-space: nowrap; }
+.ni-chunk-preview-btn:hover { color: var(--ni-primary); }
+.ni-clean-diagnostic-status { color: var(--color-text-secondary); font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+.ni-clean-diagnostics { margin-top: 6px; font-size: 12px; }
+.ni-clean-diagnostics summary { cursor: pointer; color: var(--color-text-secondary); padding: 4px 0; overflow-wrap: anywhere; }
+.ni-clean-diagnostic-tools { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 6px 0; }
+#ni-clean-preview { flex: 0 0 auto; width: auto; min-width: 0; min-height: 28px; margin: 0; padding: 4px 10px; font-size: 12px; line-height: 1.4; }
+#ni-clean-diagnostic-chunk { width: 4em; }
+#ni-clean-diagnostic-record { flex: 1 1 130px; min-width: 0; max-width: 100%; color: var(--color-text-primary); background: var(--color-background-secondary); border: 1px solid var(--color-border-secondary); border-radius: 4px; font-size: 11px; padding: 3px; }
+.ni-clean-message { border-top: 1px solid var(--color-border-tertiary); }
+.ni-clean-message pre { max-height: 340px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; line-height: 1.5; margin: 4px 0 8px; user-select: text; }
+.ni-clean-diagnostic-note { color: var(--color-text-secondary); }
+.ni-clean-diagnostic-error { color: var(--ni-warning-text, var(--color-text-primary)); overflow-wrap: anywhere; }
+.ni-global-preset-controls { display: flex; align-items: center; gap: 6px; min-width: 0; }
+#ni-global-preset-name { flex: 1 1 0; min-width: 0; width: 100%; }
+#ni-global-preset-hint { display: block; margin-top: 5px; color: var(--color-text-secondary); font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
 .ni-chunk-idx { font-size: 12px; font-weight: 500; color: var(--color-text-secondary); width: 20px; flex-shrink: 0; }
 .ni-chunk-info { flex: 1; font-size: 12px; color: var(--color-text-secondary); }
 .ni-chunk-stat { font-size: 11px; padding: 2px 7px; border-radius: 8px; flex-shrink: 0; }

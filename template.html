@@ -110,6 +110,17 @@
             <button class="ni-pt-reset" id="ni-pt-reset" title="恢复默认提示词"><i class="ti ti-rotate"></i></button>
           </div>
         </div>
+        <details class="ni-clean-diagnostics" id="ni-clean-diagnostics">
+          <summary>请求结构预览和失败响应记录</summary>
+          <div class="ni-clean-diagnostic-tools">
+            <label for="ni-clean-diagnostic-chunk">分段</label>
+            <input type="number" class="ni-kb-inp" id="ni-clean-diagnostic-chunk" min="1" step="1" value="1">
+            <button type="button" class="ni-btn ni-btn-ghost" id="ni-clean-preview">预览请求</button>
+            <select id="ni-clean-diagnostic-record" aria-label="清洗请求记录"><option value="">暂无请求记录</option></select>
+          </div>
+          <p id="ni-clean-diagnostic-status" class="ni-clean-diagnostic-status" aria-live="polite"></p>
+          <div id="ni-clean-diagnostic-content"></div>
+        </details>
       </div>
 
       <!-- Style Card-->
@@ -1107,6 +1118,16 @@
               <span class="ni-cfg-chk"><i class="ti ti-check"></i></span>
               <span>不使用</span>
             </label>
+          </div>
+          <div class="ni-field" id="ni-global-tavern-box" style="display:none">
+            <label for="ni-global-preset-name">插件使用的预设</label>
+            <div class="ni-global-preset-controls">
+              <select id="ni-global-preset-name" aria-describedby="ni-global-preset-hint">
+                <option value="">跟随前台当前预设</option>
+              </select>
+              <button type="button" class="ni-icon-btn ni-model-refresh-btn" id="ni-global-preset-refresh" title="刷新预设列表" aria-label="刷新预设列表"><i class="ti ti-refresh"></i></button>
+            </div>
+            <small id="ni-global-preset-hint"></small>
           </div>
           <div id="ni-global-builtin-box">
             <div class="ni-global-prompt-headrow">

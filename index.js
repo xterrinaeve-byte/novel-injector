@@ -5067,80 +5067,105 @@ jQuery(document).ready(function () {
                 return;
             }
 
-            // ── 持续提示词：沉浸式时间轴轨道（主支同台交织 + 绝对驻留） ───────────────────────
+            // ── 持续提示词：精准血缘绑定时间轴（主支同台 + 细致RP驻留） ───────────────────────
             const rawNodes = niGetTbNodes();
             if (!rawNodes || !rawNodes.length) return;
 
-            // 1. 将支线/附带剧情就近并入主线，只以主线为骨架排步数
-            const fusedNodes = [];
+            // 1. 分离主线与支线
+            const mainNodes = [];
+            const subNodes = [];
+
             rawNodes.forEach(node => {
                 const isSub = (node.type === 'sub' || node.type === '支线' || node._type === 'sub');
-                // 如果是支线且前面已有主线，直接揉进上一个主线节点中，不单独占步数
-                if (isSub && fusedNodes.length > 0) {
-                    const parent = fusedNodes[fusedNodes.length - 1];
-                    if (!parent.mergedSubs) parent.mergedSubs = [];
-                    parent.mergedSubs.push(`「${node.title}」${node.body || ''}`);
-                    // 如果用户在该支线上打勾，同步影响主线
-                    if (!node.done) parent.allDone = false;
+                if (isSub) {
+                    subNodes.push(node);
                 } else {
-                    // 主线独立成步
-                    fusedNodes.push({
+                    mainNodes.push({
                         ...node,
-                        allDone: !!node.done,
                         mergedSubs: []
                     });
                 }
             });
 
-            // 2. 确定当前走到哪一步主线
-            const curIdx = fusedNodes.findIndex(n => !n.allDone);
+            // 2. 精准归属：把支线交还给真正对应的主线（按伏笔链接、标题匹配或顺位归属）
+            subNodes.forEach(sub => {
+                const subTitle = (sub.title || '').trim();
+                const subBody = sub.body || '';
+                const subDesc = `「${subTitle}」${subBody}`;
+
+                // 规则A：优先通过主线的伏笔链接 (branch_links) 或关联笔记 (sub_notes) 精准匹配
+                let matchedMain = mainNodes.find(m => {
+                    const links = (m.branch_links || []).join(' ');
+                    const notes = (m.sub_notes || []).join(' ');
+                    return (subTitle && (links.includes(subTitle) || notes.includes(subTitle)));
+                });
+
+                // 规则B：若没有写明伏笔标签，按故事发生顺序匹配紧邻其后或其前最相关的主线
+                if (!matchedMain) {
+                    const subOriginalIdx = rawNodes.findIndex(n => n === sub || (n.title === sub.title && n.body === sub.body));
+                    // 寻找在原始列表里紧挨着它的主线（优先看紧随其后的主线舞台）
+                    matchedMain = mainNodes.find(m => {
+                        const mIdx = rawNodes.findIndex(n => n.title === m.title);
+                        return mIdx >= subOriginalIdx;
+                    }) || mainNodes[mainNodes.length - 1];
+                }
+
+                if (matchedMain) {
+                    matchedMain.mergedSubs.push(subDesc);
+                }
+            });
+
+            // 3. 确定当前主线所处的位置
+            const curIdx = mainNodes.findIndex(n => !n.done);
             const activeIdx = curIdx >= 0 ? curIdx : 0;
-            const curNode = fusedNodes[activeIdx];
+            const curNode = mainNodes[activeIdx];
             if (!curNode) return;
 
             const prevCount = Math.max(0, parseInt(cfg.tbWindowPrev ?? 1, 10));
             const nextCount = Math.max(0, parseInt(cfg.tbWindowNext ?? 1, 10));
 
-            // 3. 格式化单步：将主线剧情与同台发生的支线/伏笔缝合在同一个场景里
-            const formatFusedNode = (n) => {
+            // 4. 格式化主线与绑定的同台支线
+            const formatMainNode = (n) => {
                 let body = `${n.title}（主线：${n.body || '无详细描述'}）`;
 
-                // 并入的同台支线
+                // 过滤掉已被认领为同名支线的伏笔线索，避免重复啰嗦
+                const cleanLinks = (n.branch_links || []).filter(link => {
+                    return !n.mergedSubs.some(subText => subText.includes(link.replace(/【.*?】/g, '').trim()));
+                });
+
                 if (n.mergedSubs && n.mergedSubs.length > 0) {
                     body += `\n     ↳ [同台发生/支线交织] ${n.mergedSubs.join('；')}`;
                 }
-                // 节点自带的子附注事件
                 if (Array.isArray(n.sub_notes) && n.sub_notes.length > 0) {
-                    body += `\n     ↳ [同台附带事件] ${n.sub_notes.join('；')}`;
+                    body += `\n     ↳ [同台事件备忘] ${n.sub_notes.join('；')}`;
                 }
-                // 伏笔线索
-                if (Array.isArray(n.branch_links) && n.branch_links.length > 0) {
-                    body += `\n     ↳ [伏笔隐线] ${n.branch_links.join('；')}`;
+                if (cleanLinks.length > 0) {
+                    body += `\n     ↳ [伏笔隐线] ${cleanLinks.join('；')}`;
                 }
                 return body;
             };
 
-            // 4. 组装前后窗口与可视化轨道
-            const prevNodes = fusedNodes.slice(Math.max(0, activeIdx - prevCount), activeIdx);
-            const nextNodes = fusedNodes.slice(activeIdx + 1, activeIdx + 1 + nextCount);
+            // 5. 组装前后窗口与可视化轨道
+            const prevNodes = mainNodes.slice(Math.max(0, activeIdx - prevCount), activeIdx);
+            const nextNodes = mainNodes.slice(activeIdx + 1, activeIdx + 1 + nextCount);
 
             let timelineRail = '';
             prevNodes.forEach((n, idx) => {
                 const order = activeIdx - prevNodes.length + idx + 1;
-                timelineRail += `[√ 已走完·第${order}步] ${formatFusedNode(n)}\n      ↓\n`;
+                timelineRail += `[√ 已走完·第${order}步] ${formatMainNode(n)}\n      ↓\n`;
             });
 
-            timelineRail += `[★ 当前驻留演出现场·第${activeIdx + 1}步] ${formatFusedNode(curNode)}\n`;
+            timelineRail += `[★ 当前驻留演出现场·第${activeIdx + 1}步] ${formatMainNode(curNode)}\n`;
 
             if (nextNodes.length > 0) {
                 timelineRail += `      ↓\n`;
                 nextNodes.forEach((n, idx) => {
                     const order = activeIdx + 2 + idx;
-                    timelineRail += `[○ 遥远未来·第${order}步] ${formatFusedNode(n)}${idx < nextNodes.length - 1 ? '\n      ↓\n' : ''}`;
+                    timelineRail += `[○ 遥远未来·第${order}步] ${formatMainNode(n)}${idx < nextNodes.length - 1 ? '\n      ↓\n' : ''}`;
                 });
             }
 
-            // 5. 沉浸式 RP 执行原则
+            // 6. 沉浸式 RP 执行原则
             const ongoingBody =
                 `【原著时间轴全景轨迹】（主支线同台交织地图，仅供宏观世界因果参考）：
 ${timelineRail}

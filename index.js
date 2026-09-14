@@ -5067,55 +5067,89 @@ jQuery(document).ready(function () {
                 return;
             }
 
-            // ── 持续提示词：沉浸式慢节奏时间轴轨道（主支线合并 + 允许驻留） ───────────────────────
-            const nodes = niGetTbNodes();
-            const curIdx = nodes.findIndex(n => !n.done);
+            // ── 持续提示词：沉浸式时间轴轨道（主支同台交织 + 绝对驻留） ───────────────────────
+            const rawNodes = niGetTbNodes();
+            if (!rawNodes || !rawNodes.length) return;
+
+            // 1. 将支线/附带剧情就近并入主线，只以主线为骨架排步数
+            const fusedNodes = [];
+            rawNodes.forEach(node => {
+                const isSub = (node.type === 'sub' || node.type === '支线' || node._type === 'sub');
+                // 如果是支线且前面已有主线，直接揉进上一个主线节点中，不单独占步数
+                if (isSub && fusedNodes.length > 0) {
+                    const parent = fusedNodes[fusedNodes.length - 1];
+                    if (!parent.mergedSubs) parent.mergedSubs = [];
+                    parent.mergedSubs.push(`「${node.title}」${node.body || ''}`);
+                    // 如果用户在该支线上打勾，同步影响主线
+                    if (!node.done) parent.allDone = false;
+                } else {
+                    // 主线独立成步
+                    fusedNodes.push({
+                        ...node,
+                        allDone: !!node.done,
+                        mergedSubs: []
+                    });
+                }
+            });
+
+            // 2. 确定当前走到哪一步主线
+            const curIdx = fusedNodes.findIndex(n => !n.allDone);
             const activeIdx = curIdx >= 0 ? curIdx : 0;
-            const curNode = nodes[activeIdx];
+            const curNode = fusedNodes[activeIdx];
             if (!curNode) return;
 
             const prevCount = Math.max(0, parseInt(cfg.tbWindowPrev ?? 1, 10));
             const nextCount = Math.max(0, parseInt(cfg.tbWindowNext ?? 1, 10));
 
-            // 格式化主线及其绑定的支线
-            const getNodeContent = (n) => {
-                let content = `${n.title}（${n.body || '无详细描述'}）`;
-                const extras = [];
-                if (Array.isArray(n.sub_notes) && n.sub_notes.length > 0) extras.push(`支线:${n.sub_notes.join(';')}`);
-                if (Array.isArray(n.branch_links) && n.branch_links.length > 0) extras.push(`伏笔:${n.branch_links.join(';')}`);
-                return extras.length > 0 ? `${content} 【${extras.join(' | ')}】` : content;
+            // 3. 格式化单步：将主线剧情与同台发生的支线/伏笔缝合在同一个场景里
+            const formatFusedNode = (n) => {
+                let body = `${n.title}（主线：${n.body || '无详细描述'}）`;
+
+                // 并入的同台支线
+                if (n.mergedSubs && n.mergedSubs.length > 0) {
+                    body += `\n     ↳ [同台发生/支线交织] ${n.mergedSubs.join('；')}`;
+                }
+                // 节点自带的子附注事件
+                if (Array.isArray(n.sub_notes) && n.sub_notes.length > 0) {
+                    body += `\n     ↳ [同台附带事件] ${n.sub_notes.join('；')}`;
+                }
+                // 伏笔线索
+                if (Array.isArray(n.branch_links) && n.branch_links.length > 0) {
+                    body += `\n     ↳ [伏笔隐线] ${n.branch_links.join('；')}`;
+                }
+                return body;
             };
 
-            // 1. 组装可视化时间轴轨道
-            const prevNodes = nodes.slice(Math.max(0, activeIdx - prevCount), activeIdx);
-            const nextNodes = nodes.slice(activeIdx + 1, activeIdx + 1 + nextCount);
+            // 4. 组装前后窗口与可视化轨道
+            const prevNodes = fusedNodes.slice(Math.max(0, activeIdx - prevCount), activeIdx);
+            const nextNodes = fusedNodes.slice(activeIdx + 1, activeIdx + 1 + nextCount);
 
             let timelineRail = '';
-            // 已完成的前情节点
             prevNodes.forEach((n, idx) => {
                 const order = activeIdx - prevNodes.length + idx + 1;
-                timelineRail += `[√ 已走完·第${order}步] ${getNodeContent(n)}\n      ↓\n`;
+                timelineRail += `[√ 已走完·第${order}步] ${formatFusedNode(n)}\n      ↓\n`;
             });
-            // 当前驻留节点
-            timelineRail += `[★ 当前驻留演出现场·第${activeIdx + 1}步] ${getNodeContent(curNode)}\n`;
-            // 未发生的后续节点
+
+            timelineRail += `[★ 当前驻留演出现场·第${activeIdx + 1}步] ${formatFusedNode(curNode)}\n`;
+
             if (nextNodes.length > 0) {
                 timelineRail += `      ↓\n`;
                 nextNodes.forEach((n, idx) => {
                     const order = activeIdx + 2 + idx;
-                    timelineRail += `[○ 遥远未来·第${order}步] ${getNodeContent(n)}${idx < nextNodes.length - 1 ? '\n      ↓\n' : ''}`;
+                    timelineRail += `[○ 遥远未来·第${order}步] ${formatFusedNode(n)}${idx < nextNodes.length - 1 ? '\n      ↓\n' : ''}`;
                 });
             }
 
-            // 2. 组装专为细致 RP 定制的指导约束
+            // 5. 沉浸式 RP 执行原则
             const ongoingBody =
-                `【原著时间轴全景轨迹】（主支线合流地图，仅供宏观世界因果参考）：
+                `【原著时间轴全景轨迹】（主支线同台交织地图，仅供宏观世界因果参考）：
 ${timelineRail}
 
-【当前演出执行原则】：
-1. 原著仅为舞台背景板：大纲节点只说明原著曾发生过什么，绝非本轮对话的必做清单或任务！聊天中与 <user> 发生的所有互动、情感进展、即兴发挥均拥有最高优先权。
-2. 绝对允许微观驻留：当前节点「${curNode.title}」是一个可以自由生活、长时间停留的当下场景。当 <user> 在进行角色对话、感情交流、肢体互动、日常温存或亲密细节（色色/私密描写）时，必须彻底冻结大纲进度，将100%的笔力用于当前微观画面的神态、动作、语言、生理反应与心理拉扯，沉浸式配合交互。
-3. 严禁推进后续轨道：只要用户没有明确且主动地做出跨场景的大动作，你的视野就必须完全锁定在【★ 当前驻留演出现场】。严禁擅自提前触发、提及或剧透任何【○ 遥远未来】的情节！`;
+【当前演出执行原则（最高优先级）】：
+1. 原著仅为舞台背景板：大纲节点只说明原著曾发生过什么，绝非本轮对话的必做清单！聊天中与 <user> 发生的所有即兴互动、对话、情感变化均拥有绝对的最高定义权。
+2. 主支同台发生，无需割裂先后：凡在当前步标明的【同台发生/支线交织】与【主线】，皆为同一时间段内不同视角发生的事件，绝非前后递进的两个任务。你应当把它们作为同一场景内的立体环境自然烘托，无需分先后去“打卡完成”。
+3. 绝对允许微观驻留：当前节点「${curNode.title}」是一个可以自由生活、长时间停留的当下场景。当 <user> 在进行角色对话、感情交流、肢体互动、日常温存或亲密细节（色色/私密描写）时，必须彻底冻结大纲进度，将100%的笔力用于当前微观画面的神态、动作、语言、生理反应与心理拉扯，沉浸式配合交互。
+4. 严禁推进后续轨道：只要用户没有明确且主动地做出跨场景的大动作，你的视野就必须完全锁定在【★ 当前驻留演出现场】。严禁擅自提前触发、提及或剧透任何【○ 遥远未来】的情节！`;
 
             const ongoingTpl = (cfg.tbOngoingPrompt || TB_DEFAULT_ONGOING_PROMPT).trim();
             const ongoingContent = ongoingTpl

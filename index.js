@@ -5067,108 +5067,121 @@ jQuery(document).ready(function () {
                 return;
             }
 
-            // ── 持续提示词：流式时序连续推进（细粒度切片 + 自由定格） ───────────────────────
-        const rawNodes = niGetTbNodes();
-        if (!rawNodes || !rawNodes.length) return;
+            // ── 持续提示词：精准血缘绑定时间轴（主支同台 + 细致RP驻留） ───────────────────────
+            const rawNodes = niGetTbNodes();
+            if (!rawNodes || !rawNodes.length) return;
 
-        // 1. 分离主线与支线，并精准归属
-        const mainNodes = [];
-        const subNodes = [];
+            // 1. 分离主线与支线
+            const mainNodes = [];
+            const subNodes = [];
 
-        rawNodes.forEach(node => {
-            const isSub = (node.type === 'sub' || node.type === '支线' || node._type === 'sub');
-            if (isSub) subNodes.push(node);
-            else mainNodes.push({ ...node, mergedSubs: [] });
-        });
-
-        subNodes.forEach(sub => {
-            const subTitle = (sub.title || '').trim();
-            const subBody = sub.body || '';
-            const subDesc = `「${subTitle}」${subBody}`;
-
-            let matchedMain = mainNodes.find(m => {
-                const links = (m.branch_links || []).join(' ');
-                const notes = (m.sub_notes || []).join(' ');
-                return (subTitle && (links.includes(subTitle) || notes.includes(subTitle)));
+            rawNodes.forEach(node => {
+                const isSub = (node.type === 'sub' || node.type === '支线' || node._type === 'sub');
+                if (isSub) {
+                    subNodes.push(node);
+                } else {
+                    mainNodes.push({
+                        ...node,
+                        mergedSubs: []
+                    });
+                }
             });
 
-            if (!matchedMain) {
-                const subOriginalIdx = rawNodes.findIndex(n => n === sub || (n.title === sub.title && n.body === sub.body));
-                matchedMain = mainNodes.find(m => {
-                    const mIdx = rawNodes.findIndex(n => n.title === m.title);
-                    return mIdx >= subOriginalIdx;
-                }) || mainNodes[mainNodes.length - 1];
-            }
+            // 2. 精准归属：把支线交还给真正对应的主线（按伏笔链接、标题匹配或顺位归属）
+            subNodes.forEach(sub => {
+                const subTitle = (sub.title || '').trim();
+                const subBody = sub.body || '';
+                const subDesc = `「${subTitle}」${subBody}`;
 
-            if (matchedMain) matchedMain.mergedSubs.push(subDesc);
-        });
+                // 规则A：优先通过主线的伏笔链接 (branch_links) 或关联笔记 (sub_notes) 精准匹配
+                let matchedMain = mainNodes.find(m => {
+                    const links = (m.branch_links || []).join(' ');
+                    const notes = (m.sub_notes || []).join(' ');
+                    return (subTitle && (links.includes(subTitle) || notes.includes(subTitle)));
+                });
 
-        // 2. 找到当前正在涉足的主线
-        const curIdx = mainNodes.findIndex(n => !n.done);
-        const activeIdx = curIdx >= 0 ? curIdx : 0;
-        const curNode = mainNodes[activeIdx];
-        if (!curNode) return;
+                // 规则B：若没有写明伏笔标签，按故事发生顺序匹配紧邻其后或其前最相关的主线
+                if (!matchedMain) {
+                    const subOriginalIdx = rawNodes.findIndex(n => n === sub || (n.title === sub.title && n.body === sub.body));
+                    // 寻找在原始列表里紧挨着它的主线（优先看紧随其后的主线舞台）
+                    matchedMain = mainNodes.find(m => {
+                        const mIdx = rawNodes.findIndex(n => n.title === m.title);
+                        return mIdx >= subOriginalIdx;
+                    }) || mainNodes[mainNodes.length - 1];
+                }
 
-        const prevCount = Math.max(0, parseInt(cfg.tbWindowPrev ?? 1, 10));
-        const nextCount = Math.max(0, parseInt(cfg.tbWindowNext ?? 1, 10));
-
-        // 3. 格式化时序切片
-        const formatFlowNode = (n) => {
-            let body = `【${n.title}】${n.body || '无详细描述'}`;
-            const cleanLinks = (n.branch_links || []).filter(link => {
-                return !n.mergedSubs.some(subText => subText.includes(link.replace(/【.*?】/g, '').trim()));
+                if (matchedMain) {
+                    matchedMain.mergedSubs.push(subDesc);
+                }
             });
-            if (n.mergedSubs && n.mergedSubs.length > 0) {
-                body += ` [伴随支线：${n.mergedSubs.join('；')}]`;
+
+            // 3. 确定当前主线所处的位置
+            const curIdx = mainNodes.findIndex(n => !n.done);
+            const activeIdx = curIdx >= 0 ? curIdx : 0;
+            const curNode = mainNodes[activeIdx];
+            if (!curNode) return;
+
+            const prevCount = Math.max(0, parseInt(cfg.tbWindowPrev ?? 1, 10));
+            const nextCount = Math.max(0, parseInt(cfg.tbWindowNext ?? 1, 10));
+
+            // 4. 格式化主线与绑定的同台支线
+            const formatMainNode = (n) => {
+                let body = `${n.title}（主线：${n.body || '无详细描述'}）`;
+
+                // 过滤掉已被认领为同名支线的伏笔线索，避免重复啰嗦
+                const cleanLinks = (n.branch_links || []).filter(link => {
+                    return !n.mergedSubs.some(subText => subText.includes(link.replace(/【.*?】/g, '').trim()));
+                });
+
+                if (n.mergedSubs && n.mergedSubs.length > 0) {
+                    body += `\n     ↳ [同台发生/支线交织] ${n.mergedSubs.join('；')}`;
+                }
+                if (Array.isArray(n.sub_notes) && n.sub_notes.length > 0) {
+                    body += `\n     ↳ [同台事件备忘] ${n.sub_notes.join('；')}`;
+                }
+                if (cleanLinks.length > 0) {
+                    body += `\n     ↳ [伏笔隐线] ${cleanLinks.join('；')}`;
+                }
+                return body;
+            };
+
+            // 5. 组装前后窗口与可视化轨道
+            const prevNodes = mainNodes.slice(Math.max(0, activeIdx - prevCount), activeIdx);
+            const nextNodes = mainNodes.slice(activeIdx + 1, activeIdx + 1 + nextCount);
+
+            let timelineRail = '';
+            prevNodes.forEach((n, idx) => {
+                const order = activeIdx - prevNodes.length + idx + 1;
+                timelineRail += `[√ 已走完·第${order}步] ${formatMainNode(n)}\n      ↓\n`;
+            });
+
+            timelineRail += `[★ 当前驻留演出现场·第${activeIdx + 1}步] ${formatMainNode(curNode)}\n`;
+
+            if (nextNodes.length > 0) {
+                timelineRail += `      ↓\n`;
+                nextNodes.forEach((n, idx) => {
+                    const order = activeIdx + 2 + idx;
+                    timelineRail += `[○ 遥远未来·第${order}步] ${formatMainNode(n)}${idx < nextNodes.length - 1 ? '\n      ↓\n' : ''}`;
+                });
             }
-            if (Array.isArray(n.sub_notes) && n.sub_notes.length > 0) {
-                body += ` [现场事件：${n.sub_notes.join('；')}]`;
-            }
-            if (cleanLinks.length > 0) {
-                body += ` [潜在伏笔：${cleanLinks.join('；')}]`;
-            }
-            return body;
-        };
 
-        // 4. 组装前后视界（不再用第几步，改用时序河流）
-        const prevNodes = mainNodes.slice(Math.max(0, activeIdx - prevCount), activeIdx);
-        const nextNodes = mainNodes.slice(activeIdx + 1, activeIdx + 1 + nextCount);
+            // 6. 沉浸式 RP 执行原则
+            const ongoingBody =
+                `【原著时间轴全景轨迹】（主支线同台交织地图，仅供宏观世界因果参考）：
+${timelineRail}
 
-        let flowTrail = '';
-        if (prevNodes.length > 0) {
-            flowTrail += `--- 上游已过因果（已发生的事实，供因果参考） ---\n`;
-            flowTrail += prevNodes.map(n => ` · ${formatFlowNode(n)}`).join('\n') + '\n\n';
-        }
+【当前演出执行原则（最高优先级）】：
+1. 原著仅为舞台背景板：大纲节点只说明原著曾发生过什么，绝非本轮对话的必做清单！聊天中与 <user> 发生的所有即兴互动、对话、情感变化均拥有绝对的最高定义权。
+2. 主支同台发生，无需割裂先后：凡在当前步标明的【同台发生/支线交织】与【主线】，皆为同一时间段内不同视角发生的事件，绝非前后递进的两个任务。你应当把它们作为同一场景内的立体环境自然烘托，无需分先后去“打卡完成”。
+3. 绝对允许微观驻留：当前节点「${curNode.title}」是一个可以自由生活、长时间停留的当下场景。当 <user> 在进行角色对话、感情交流、肢体互动、日常温存或亲密细节（色色/私密描写）时，必须彻底冻结大纲进度，将100%的笔力用于当前微观画面的神态、动作、语言、生理反应与心理拉扯，沉浸式配合交互。
+4. 严禁推进后续轨道：只要用户没有明确且主动地做出跨场景的大动作，你的视野就必须完全锁定在【★ 当前驻留演出现场】。严禁擅自提前触发、提及或剧透任何【○ 遥远未来】的情节！`;
 
-        flowTrail += `=== ▶▶▶ 当前正涉足的原著剧情域（当下演播切片） ◀◀◀ ===\n`;
-        flowTrail += ` ★ ${formatFlowNode(curNode)}\n\n`;
+            const ongoingTpl = (cfg.tbOngoingPrompt || TB_DEFAULT_ONGOING_PROMPT).trim();
+            const ongoingContent = ongoingTpl
+                .replace(/{B_TITLE}/g, curNode.title)
+                .replace(/{B_BODY}/g, ongoingBody) + immersionAppend;
 
-        if (nextNodes.length > 0) {
-            flowTrail += `--- 下游潜在流向（未来的原著走势，严禁抢跑跨入） ---\n`;
-            flowTrail += nextNodes.map(n => ` · ${formatFlowNode(n)}`).join('\n');
-        }
-
-        // 5. 注入“进度流式推进与随时定格”的最高演出法典
-        const ongoingBody = 
-`【原著时序参考流】：
-${flowTrail}
-
-【演出推进与驻留法典（最高优先级）】：
-1. 细粒度流式推进，绝不囫囵吞枣：
-   原著剧情域是一个连续的过程，绝不需要在一两轮对话内全盘演绎完毕！一轮对话往往只能推进其中微小的一小节进展（例如甚至只是刚借来工具、或正在交谈的一两句话）。跟随 <user> 的节奏，像慢镜头一样一步一步顺畅流淌，绝不可急躁赶场。
-
-2. 微观互动即刻定格（绝对驻留权）：
-   原著情节仅为宏观背景板。当 <user> 的输入偏向细腻的情感互动、角色交谈、肢体接触、日常温存、或深度的私密/亲密描写（色色细节）时，大纲剧情进度必须【彻底定格归零】！此时禁止推动任何事件进展，将100%的笔力用于当前微观画面的神态、动作、感官、生理反应与心理拉扯，沉浸配合用户演出，直到用户主动推动下一个动作。
-
-3. 自然溢出与边界严守：
-   仅当当下演播切片里的事件已极其充分、自然地在对话中水到渠成走完，且用户做出了跨越性的行动时，才可极自然地溢出过渡到下一事件的开端。在未自然演化至此之前，严禁提前触发或引入【下游潜在流向】里的任何内容！`;
-
-        const ongoingTpl = (cfg.tbOngoingPrompt || TB_DEFAULT_ONGOING_PROMPT).trim();
-        const ongoingContent = ongoingTpl
-            .replace(/{B_TITLE}/g, curNode.title)
-            .replace(/{B_BODY}/g, ongoingBody) + immersionAppend;
-
-        _inject(`${EXT_NAME}_tb_ongoing`, ongoingContent);
+            _inject(`${EXT_NAME}_tb_ongoing`, ongoingContent);
         });
         eventSource.makeLast?.(event_types.CHAT_COMPLETION_PROMPT_READY, niFinalUserSubPromptRewrite);
     }

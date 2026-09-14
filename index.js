@@ -224,7 +224,7 @@ function _detectExtFolder() {
         // 匹配形如 extensions/third-party/xxx/index.js 的路径
         const m = stack.match(/extensions\/([^/]+\/[^/]+)\/index\.js/);
         if (m) return m[1];
-    } catch (_) {}
+    } catch (_) { }
     return `third-party/${EXT_NAME}`;
 }
 const EXT_FOLDER = _detectExtFolder();
@@ -265,6 +265,9 @@ const DEFAULT_SETTINGS = {
     novelLibraryPageSize: NI_NOVEL_LIBRARY_PAGE_SIZE_DEFAULT,
     transBookStagePageSize: NI_TRANSBOOK_STAGE_PAGE_SIZE,
     transBookNodePageSize: NI_STAGE_PAGE_SIZE_DEFAULT,
+    // 角色扮演注入设置
+    tbWindowPrev: 1,      // 默认往前看 1 条主线（可以按需在面板改）
+    tbWindowNext: 1,      // 默认往后看 1 条主线
     // 偏差注入设置
     devPrompt: DEV_PROMPT,
     devInjPos: 2,    // 默认主提示前，作为分支现实约束
@@ -315,16 +318,16 @@ const DEFAULT_SETTINGS = {
     tbRestoreAfterPluginEnable: false,
     novelLibrary: [],     // 小说快照库 [{name, key, snapshot}]
     // 世界设定注入设置
-    worldInjPos:   2,   // 默认主提示前
+    worldInjPos: 2,   // 默认主提示前
     worldInjDepth: 4,
-    worldInjRole:  0,
+    worldInjRole: 0,
     // 文风注入设置
-    styleInjPos:    2,
-    styleInjDepth:  4,
-    styleInjRole:   0,
+    styleInjPos: 2,
+    styleInjDepth: 4,
+    styleInjRole: 0,
     styleSampleLen: 1000,
-    styleChunkIdx:  0,
-    styleMode:      'sample', // 'sample' | 'manual'
+    styleChunkIdx: 0,
+    styleMode: 'sample', // 'sample' | 'manual'
     userSubEnabled: false,
     userSubMode: 'replace', // 'replace'=替换原角人生 | 'play'=扮演原角本人
     userSubCharIdx: '',
@@ -673,7 +676,7 @@ function niLoadSettings() {
             if (hasVectors || S.stageMapN > 0) {
                 buildStages();
             }
-        }).catch(() => {});
+        }).catch(() => { });
     }
 }
 
@@ -691,23 +694,23 @@ function niLoadSettings() {
 
 function niSaveSettings({ scheduleAutosave = true } = {}) {
     const cfg = extension_settings[EXT_NAME];
-    cfg.cleanKey    = q('#ni-clean-key')?.value || cfg.cleanKey;
-    cfg.cleanUrl    = q('#ni-clean-url')?.value || cfg.cleanUrl;
-    cfg.cleanModel  = q('#ni-clean-model')?.value || cfg.cleanModel;
+    cfg.cleanKey = q('#ni-clean-key')?.value || cfg.cleanKey;
+    cfg.cleanUrl = q('#ni-clean-url')?.value || cfg.cleanUrl;
+    cfg.cleanModel = q('#ni-clean-model')?.value || cfg.cleanModel;
     cfg.cleanStream = q('#ni-clean-stream')?.checked ?? cfg.cleanStream;
     cfg.cleanAutoResume = q('#ni-clean-auto-resume')?.checked ?? cfg.cleanAutoResume;
-    cfg.vecKey      = q('#ni-vec-key')?.value || cfg.vecKey;
-    cfg.vecUrl      = q('#ni-vec-url')?.value || cfg.vecUrl;
-    cfg.vecModel    = q('#ni-vec-model')?.value || cfg.vecModel;
-    cfg.injDepth    = parseInt(q('#ni-inj-depth')?.value) || DEFAULT_SETTINGS.injDepth;
-    cfg.vecInjPos   = parseInt(q('#ni-vec-inj-pos')?.value) ?? DEFAULT_SETTINGS.vecInjPos;
-    cfg.vecInjRole  = parseInt(q('#ni-vec-inj-role')?.value) ?? DEFAULT_SETTINGS.vecInjRole;
-    cfg.recallTopK  = parseInt(q('#ni-recall-topk')?.value) || DEFAULT_SETTINGS.recallTopK;
-    cfg.recallThresh= parseFloat(q('#ni-recall-thresh')?.value) ?? DEFAULT_SETTINGS.recallThresh;
-    cfg.vecMsgTag   = (q('#ni-vec-msg-tag')?.value || '').trim();
+    cfg.vecKey = q('#ni-vec-key')?.value || cfg.vecKey;
+    cfg.vecUrl = q('#ni-vec-url')?.value || cfg.vecUrl;
+    cfg.vecModel = q('#ni-vec-model')?.value || cfg.vecModel;
+    cfg.injDepth = parseInt(q('#ni-inj-depth')?.value) || DEFAULT_SETTINGS.injDepth;
+    cfg.vecInjPos = parseInt(q('#ni-vec-inj-pos')?.value) ?? DEFAULT_SETTINGS.vecInjPos;
+    cfg.vecInjRole = parseInt(q('#ni-vec-inj-role')?.value) ?? DEFAULT_SETTINGS.vecInjRole;
+    cfg.recallTopK = parseInt(q('#ni-recall-topk')?.value) || DEFAULT_SETTINGS.recallTopK;
+    cfg.recallThresh = parseFloat(q('#ni-recall-thresh')?.value) ?? DEFAULT_SETTINGS.recallThresh;
+    cfg.vecMsgTag = (q('#ni-vec-msg-tag')?.value || '').trim();
     cfg.vecMsgCount = parseInt(q('#ni-vec-msg-count')?.value) || DEFAULT_SETTINGS.vecMsgCount;
-    cfg.charInjPos  = parseInt(q('#ni-char-inj-pos')?.value) ?? DEFAULT_SETTINGS.charInjPos;
-    cfg.charInjDepth= parseInt(q('#ni-char-inj-depth')?.value) ?? DEFAULT_SETTINGS.charInjDepth;
+    cfg.charInjPos = parseInt(q('#ni-char-inj-pos')?.value) ?? DEFAULT_SETTINGS.charInjPos;
+    cfg.charInjDepth = parseInt(q('#ni-char-inj-depth')?.value) ?? DEFAULT_SETTINGS.charInjDepth;
     cfg.charInjRole = parseInt(q('#ni-char-inj-role')?.value) ?? DEFAULT_SETTINGS.charInjRole;
     cfg.charAutoSleepEnabled = q('#ni-char-auto-sleep-btn')
         ? q('#ni-char-auto-sleep-btn').classList.contains('on')
@@ -715,8 +718,8 @@ function niSaveSettings({ scheduleAutosave = true } = {}) {
     cfg.charPageSize = Math.max(1, Math.min(200,
         parseInt(q('#ni-char-page-size')?.value ?? cfg.charPageSize, 10) || DEFAULT_SETTINGS.charPageSize
     ));
-    cfg.plotInjPos  = parseInt(q('#ni-plot-inj-pos')?.value) ?? DEFAULT_SETTINGS.plotInjPos;
-    cfg.plotInjDepth= parseInt(q('#ni-plot-inj-depth')?.value) ?? DEFAULT_SETTINGS.plotInjDepth;
+    cfg.plotInjPos = parseInt(q('#ni-plot-inj-pos')?.value) ?? DEFAULT_SETTINGS.plotInjPos;
+    cfg.plotInjDepth = parseInt(q('#ni-plot-inj-depth')?.value) ?? DEFAULT_SETTINGS.plotInjDepth;
     cfg.plotInjRole = parseInt(q('#ni-plot-inj-role')?.value) ?? DEFAULT_SETTINGS.plotInjRole;
     cfg.plotInjMaxTokens = niNormalizeRawInjectionMaxTokens(
         q('#ni-plot-inj-max-tokens')?.value ?? cfg.plotInjMaxTokens,
@@ -728,17 +731,17 @@ function niSaveSettings({ scheduleAutosave = true } = {}) {
     cfg.novelLibraryPageSize = Math.max(1, Math.min(200,
         parseInt(q('#ni-lib-page-size')?.value ?? cfg.novelLibraryPageSize, 10) || DEFAULT_SETTINGS.novelLibraryPageSize
     ));
-    cfg.devPrompt   = q('#ni-dev-pt-content')?.value || cfg.devPrompt || DEFAULT_SETTINGS.devPrompt;
-    cfg.devInjPos   = niCfgInt('#ni-dev-inj-pos', DEFAULT_SETTINGS.devInjPos);
+    cfg.devPrompt = q('#ni-dev-pt-content')?.value || cfg.devPrompt || DEFAULT_SETTINGS.devPrompt;
+    cfg.devInjPos = niCfgInt('#ni-dev-inj-pos', DEFAULT_SETTINGS.devInjPos);
     cfg.devInjDepth = niCfgInt('#ni-dev-inj-depth', DEFAULT_SETTINGS.devInjDepth);
-    cfg.devInjRole  = niCfgInt('#ni-dev-inj-role', DEFAULT_SETTINGS.devInjRole);
+    cfg.devInjRole = niCfgInt('#ni-dev-inj-role', DEFAULT_SETTINGS.devInjRole);
     cfg.devAutoUpdateEnabled = q('#ni-dev-auto-enabled')?.checked ?? (cfg.devAutoUpdateEnabled ?? DEFAULT_SETTINGS.devAutoUpdateEnabled);
     cfg.devAutoUpdateEvery = niCfgBoundInt('#ni-dev-auto-every', DEFAULT_SETTINGS.devAutoUpdateEvery, 1, 9999);
     cfg.devManualMsgCount = niCfgBoundInt('#ni-dev-manual-msg-count', DEFAULT_SETTINGS.devManualMsgCount, 1, 200);
-    cfg.rawInjMode  = niNormalizeRawInjMode(q('#ni-raw-inj-mode')?.value ?? cfg.rawInjMode);
-    cfg.chunkKb     = parseInt(q('#ni-chunk-kb')?.value) || DEFAULT_SETTINGS.chunkKb;
-    cfg.customPrompt    = q('#ni-pt-content')?.value || CLEAN_PROMPT;
-    cfg.roleplayPrompt  = q('#ni-stage-pt-content')?.value || extension_settings[EXT_NAME]?.roleplayPrompt || ROLEPLAY_PROMPT;
+    cfg.rawInjMode = niNormalizeRawInjMode(q('#ni-raw-inj-mode')?.value ?? cfg.rawInjMode);
+    cfg.chunkKb = parseInt(q('#ni-chunk-kb')?.value) || DEFAULT_SETTINGS.chunkKb;
+    cfg.customPrompt = q('#ni-pt-content')?.value || CLEAN_PROMPT;
+    cfg.roleplayPrompt = q('#ni-stage-pt-content')?.value || extension_settings[EXT_NAME]?.roleplayPrompt || ROLEPLAY_PROMPT;
     cfg.roleplayEnabled = q('#ni-stage-pt-enabled')?.checked ?? (extension_settings[EXT_NAME]?.roleplayEnabled !== false);
     if (q('#ni-global-source-tavern')?.checked) {
         cfg.globalPromptSource = 'tavern';
@@ -760,9 +763,9 @@ function niSaveSettings({ scheduleAutosave = true } = {}) {
     cfg.globalTailInjDepth = niCfgInt('#ni-global-tail-inj-depth', DEFAULT_SETTINGS.globalTailInjDepth);
     cfg.globalTailInjRole = niCfgInt('#ni-global-tail-inj-role', DEFAULT_SETTINGS.globalTailInjRole);
     cfg.apiTimeoutMin = Math.max(1, parseInt(q('#ni-api-timeout')?.value) || DEFAULT_SETTINGS.apiTimeoutMin);
-    cfg.apiRateLimit  = Math.max(0, parseInt(q('#ni-rate-limit')?.value) ?? DEFAULT_SETTINGS.apiRateLimit);
+    cfg.apiRateLimit = Math.max(0, parseInt(q('#ni-rate-limit')?.value) ?? DEFAULT_SETTINGS.apiRateLimit);
     cfg.apiConcurrency = niCfgBoundInt('#ni-api-concurrency', DEFAULT_SETTINGS.apiConcurrency, 0, 99);
-    cfg.vecRateLimit  = Math.max(0, parseInt(q('#ni-vec-rate-limit')?.value) ?? DEFAULT_SETTINGS.vecRateLimit);
+    cfg.vecRateLimit = Math.max(0, parseInt(q('#ni-vec-rate-limit')?.value) ?? DEFAULT_SETTINGS.vecRateLimit);
     cfg.vecConcurrency = niCfgBoundInt('#ni-vec-concurrency', DEFAULT_SETTINGS.vecConcurrency, 0, 99);
     cfg.vecBatchSize = niCfgBoundInt('#ni-vec-batch-size', DEFAULT_SETTINGS.vecBatchSize, 1, 100);
     // 持久化运行时数据
@@ -772,30 +775,30 @@ function niSaveSettings({ scheduleAutosave = true } = {}) {
         delete cfg._stageMapN;
         delete cfg._chunkStageMap;
     }
-    cfg._stageStates   = S.stageStates;
-    cfg._stageSummaries= S.stageSummaries;
-    cfg._stageTitles   = S.stageTitles;
-    cfg._novelKey      = nextNovelKey;
-    cfg._heavyFileKey  = S.heavyFileKey;
+    cfg._stageStates = S.stageStates;
+    cfg._stageSummaries = S.stageSummaries;
+    cfg._stageTitles = S.stageTitles;
+    cfg._novelKey = nextNovelKey;
+    cfg._heavyFileKey = S.heavyFileKey;
     cfg._fileFingerprint = S.fileFingerprint;
-    cfg._chunkKbUsed   = S.chunkKbUsed;
-    cfg._vecDone       = S.vecDone;
-    cfg._stageVecDone  = S.stageVecDone;
+    cfg._chunkKbUsed = S.chunkKbUsed;
+    cfg._vecDone = S.vecDone;
+    cfg._stageVecDone = S.stageVecDone;
     cfg._stageVecExpected = S.stageVecExpected;
-    cfg._cleanDone     = S.cleanDone;
+    cfg._cleanDone = S.cleanDone;
     cfg._worldCategories = niGetWorldCategories();
     niClearLegacyDeviationSettings();
-    cfg.worldInjPos   = parseInt(q('#ni-world-inj-pos')?.value)   ?? DEFAULT_SETTINGS.worldInjPos;
-    cfg.worldInjDepth = parseInt(q('#ni-world-inj-depth')?.value)  ?? DEFAULT_SETTINGS.worldInjDepth;
-    cfg.worldInjRole  = parseInt(q('#ni-world-inj-role')?.value)   ?? DEFAULT_SETTINGS.worldInjRole;
+    cfg.worldInjPos = parseInt(q('#ni-world-inj-pos')?.value) ?? DEFAULT_SETTINGS.worldInjPos;
+    cfg.worldInjDepth = parseInt(q('#ni-world-inj-depth')?.value) ?? DEFAULT_SETTINGS.worldInjDepth;
+    cfg.worldInjRole = parseInt(q('#ni-world-inj-role')?.value) ?? DEFAULT_SETTINGS.worldInjRole;
 
     // 文风设置
-    cfg.styleInjPos   = parseInt(q('#ni-style-inj-pos2')?.value)   ?? DEFAULT_SETTINGS.styleInjPos;
-    cfg.styleInjDepth = parseInt(q('#ni-style-inj-depth2')?.value)  ?? DEFAULT_SETTINGS.styleInjDepth;
-    cfg.styleInjRole  = parseInt(q('#ni-style-inj-role2')?.value)   ?? DEFAULT_SETTINGS.styleInjRole;
-    cfg.styleSampleLen= parseInt(q('#ni-style-sample-len')?.value) || DEFAULT_SETTINGS.styleSampleLen;
-    cfg.styleChunkIdx = parseInt(q('#ni-style-chunk-sel')?.value)  || 0;
-    cfg.styleMode     = q('#ni-style-mode')?.value                 ?? DEFAULT_SETTINGS.styleMode;
+    cfg.styleInjPos = parseInt(q('#ni-style-inj-pos2')?.value) ?? DEFAULT_SETTINGS.styleInjPos;
+    cfg.styleInjDepth = parseInt(q('#ni-style-inj-depth2')?.value) ?? DEFAULT_SETTINGS.styleInjDepth;
+    cfg.styleInjRole = parseInt(q('#ni-style-inj-role2')?.value) ?? DEFAULT_SETTINGS.styleInjRole;
+    cfg.styleSampleLen = parseInt(q('#ni-style-sample-len')?.value) || DEFAULT_SETTINGS.styleSampleLen;
+    cfg.styleChunkIdx = parseInt(q('#ni-style-chunk-sel')?.value) || 0;
+    cfg.styleMode = q('#ni-style-mode')?.value ?? DEFAULT_SETTINGS.styleMode;
     cfg.autoSaveEnabled = q('#ni-autosave-chk')?.checked ?? (cfg.autoSaveEnabled ?? DEFAULT_SETTINGS.autoSaveEnabled);
 
     saveSettingsDebounced();
@@ -955,9 +958,9 @@ function niUpdateStageInjectionBudgetNote(result = null, {
 
 function syncSettingsToUI() {
     const cfg = extension_settings[EXT_NAME] || {};
-    sv('#ni-clean-key',    cfg.cleanKey    || '');
-    sv('#ni-clean-url',    cfg.cleanUrl    || DEFAULT_SETTINGS.cleanUrl);
-    sv('#ni-clean-model',  cfg.cleanModel  || DEFAULT_SETTINGS.cleanModel);
+    sv('#ni-clean-key', cfg.cleanKey || '');
+    sv('#ni-clean-url', cfg.cleanUrl || DEFAULT_SETTINGS.cleanUrl);
+    sv('#ni-clean-model', cfg.cleanModel || DEFAULT_SETTINGS.cleanModel);
     const streamEl = q('#ni-clean-stream');
     if (streamEl) {
         streamEl.checked = cfg.cleanStream ?? DEFAULT_SETTINGS.cleanStream;
@@ -970,52 +973,52 @@ function syncSettingsToUI() {
         const autoResumePill = q('#ni-clean-auto-resume-pill');
         if (autoResumePill) autoResumePill.textContent = autoResumeEl.checked ? '开' : '关';
     }
-    sv('#ni-vec-key',      cfg.vecKey      || '');
-    sv('#ni-vec-url',      cfg.vecUrl      || DEFAULT_SETTINGS.vecUrl);
-    sv('#ni-vec-model',    cfg.vecModel    || DEFAULT_SETTINGS.vecModel);
-    sv('#ni-inj-depth',    cfg.injDepth    ?? DEFAULT_SETTINGS.injDepth);
-    sv('#ni-vec-inj-pos',  cfg.vecInjPos   ?? DEFAULT_SETTINGS.vecInjPos);
-    sv('#ni-vec-inj-role', cfg.vecInjRole  ?? DEFAULT_SETTINGS.vecInjRole);
-    sv('#ni-recall-topk',  cfg.recallTopK  ?? DEFAULT_SETTINGS.recallTopK);
-    sv('#ni-recall-thresh',cfg.recallThresh?? DEFAULT_SETTINGS.recallThresh);
-    sv('#ni-vec-msg-tag',  cfg.vecMsgTag   ?? DEFAULT_SETTINGS.vecMsgTag);
+    sv('#ni-vec-key', cfg.vecKey || '');
+    sv('#ni-vec-url', cfg.vecUrl || DEFAULT_SETTINGS.vecUrl);
+    sv('#ni-vec-model', cfg.vecModel || DEFAULT_SETTINGS.vecModel);
+    sv('#ni-inj-depth', cfg.injDepth ?? DEFAULT_SETTINGS.injDepth);
+    sv('#ni-vec-inj-pos', cfg.vecInjPos ?? DEFAULT_SETTINGS.vecInjPos);
+    sv('#ni-vec-inj-role', cfg.vecInjRole ?? DEFAULT_SETTINGS.vecInjRole);
+    sv('#ni-recall-topk', cfg.recallTopK ?? DEFAULT_SETTINGS.recallTopK);
+    sv('#ni-recall-thresh', cfg.recallThresh ?? DEFAULT_SETTINGS.recallThresh);
+    sv('#ni-vec-msg-tag', cfg.vecMsgTag ?? DEFAULT_SETTINGS.vecMsgTag);
     sv('#ni-vec-msg-count', cfg.vecMsgCount ?? DEFAULT_SETTINGS.vecMsgCount);
-    sv('#ni-char-inj-pos', cfg.charInjPos  ?? DEFAULT_SETTINGS.charInjPos);
-    sv('#ni-char-inj-depth',cfg.charInjDepth?? DEFAULT_SETTINGS.charInjDepth);
-    sv('#ni-char-inj-role',cfg.charInjRole ?? DEFAULT_SETTINGS.charInjRole);
+    sv('#ni-char-inj-pos', cfg.charInjPos ?? DEFAULT_SETTINGS.charInjPos);
+    sv('#ni-char-inj-depth', cfg.charInjDepth ?? DEFAULT_SETTINGS.charInjDepth);
+    sv('#ni-char-inj-role', cfg.charInjRole ?? DEFAULT_SETTINGS.charInjRole);
     sv('#ni-char-page-size', cfg.charPageSize ?? DEFAULT_SETTINGS.charPageSize);
     niSyncCharAutoSleepUI();
-    sv('#ni-plot-inj-pos', cfg.plotInjPos  ?? DEFAULT_SETTINGS.plotInjPos);
-    sv('#ni-plot-inj-depth',cfg.plotInjDepth?? DEFAULT_SETTINGS.plotInjDepth);
-    sv('#ni-plot-inj-role',cfg.plotInjRole ?? DEFAULT_SETTINGS.plotInjRole);
+    sv('#ni-plot-inj-pos', cfg.plotInjPos ?? DEFAULT_SETTINGS.plotInjPos);
+    sv('#ni-plot-inj-depth', cfg.plotInjDepth ?? DEFAULT_SETTINGS.plotInjDepth);
+    sv('#ni-plot-inj-role', cfg.plotInjRole ?? DEFAULT_SETTINGS.plotInjRole);
     sv('#ni-plot-inj-max-tokens', cfg.plotInjMaxTokens ?? DEFAULT_SETTINGS.plotInjMaxTokens);
     sv('#ni-stage-page-size', cfg.stagePageSize ?? DEFAULT_SETTINGS.stagePageSize);
     sv('#ni-lib-page-size', cfg.novelLibraryPageSize ?? DEFAULT_SETTINGS.novelLibraryPageSize);
     niUpdateStageInjectionBudgetNote();
-    sv('#ni-dev-inj-pos', cfg.devInjPos  ?? DEFAULT_SETTINGS.devInjPos);
-    sv('#ni-dev-inj-depth',cfg.devInjDepth?? DEFAULT_SETTINGS.devInjDepth);
-    sv('#ni-dev-inj-role',cfg.devInjRole ?? DEFAULT_SETTINGS.devInjRole);
+    sv('#ni-dev-inj-pos', cfg.devInjPos ?? DEFAULT_SETTINGS.devInjPos);
+    sv('#ni-dev-inj-depth', cfg.devInjDepth ?? DEFAULT_SETTINGS.devInjDepth);
+    sv('#ni-dev-inj-role', cfg.devInjRole ?? DEFAULT_SETTINGS.devInjRole);
     sv('#ni-dev-auto-every', niBoundIntValue(cfg.devAutoUpdateEvery, DEFAULT_SETTINGS.devAutoUpdateEvery, 1, 9999));
     sv('#ni-dev-manual-msg-count', cfg.devManualMsgCount ?? DEFAULT_SETTINGS.devManualMsgCount);
     const devAutoEl = q('#ni-dev-auto-enabled');
     if (devAutoEl) devAutoEl.checked = !!(cfg.devAutoUpdateEnabled ?? DEFAULT_SETTINGS.devAutoUpdateEnabled);
     niSyncDevAutoUI();
-    sv('#ni-raw-inj-mode', cfg.rawInjMode  ?? DEFAULT_SETTINGS.rawInjMode);
+    sv('#ni-raw-inj-mode', cfg.rawInjMode ?? DEFAULT_SETTINGS.rawInjMode);
     sv('#ni-global-head-inj-pos', cfg.globalHeadInjPos ?? DEFAULT_SETTINGS.globalHeadInjPos);
     sv('#ni-global-head-inj-depth', cfg.globalHeadInjDepth ?? DEFAULT_SETTINGS.globalHeadInjDepth);
     sv('#ni-global-head-inj-role', cfg.globalHeadInjRole ?? DEFAULT_SETTINGS.globalHeadInjRole);
     sv('#ni-global-tail-inj-pos', cfg.globalTailInjPos ?? DEFAULT_SETTINGS.globalTailInjPos);
     sv('#ni-global-tail-inj-depth', cfg.globalTailInjDepth ?? DEFAULT_SETTINGS.globalTailInjDepth);
     sv('#ni-global-tail-inj-role', cfg.globalTailInjRole ?? DEFAULT_SETTINGS.globalTailInjRole);
-    sv('#ni-world-inj-pos',  cfg.worldInjPos   ?? DEFAULT_SETTINGS.worldInjPos);
-    sv('#ni-world-inj-depth',cfg.worldInjDepth ?? DEFAULT_SETTINGS.worldInjDepth);
-    sv('#ni-world-inj-role', cfg.worldInjRole  ?? DEFAULT_SETTINGS.worldInjRole);
+    sv('#ni-world-inj-pos', cfg.worldInjPos ?? DEFAULT_SETTINGS.worldInjPos);
+    sv('#ni-world-inj-depth', cfg.worldInjDepth ?? DEFAULT_SETTINGS.worldInjDepth);
+    sv('#ni-world-inj-role', cfg.worldInjRole ?? DEFAULT_SETTINGS.worldInjRole);
     // 文风设置
-    sv('#ni-style-inj-pos2',  cfg.styleInjPos   ?? DEFAULT_SETTINGS.styleInjPos);
-    sv('#ni-style-inj-depth2',cfg.styleInjDepth ?? DEFAULT_SETTINGS.styleInjDepth);
-    sv('#ni-style-inj-role2', cfg.styleInjRole  ?? DEFAULT_SETTINGS.styleInjRole);
-    sv('#ni-style-sample-len',cfg.styleSampleLen ?? DEFAULT_SETTINGS.styleSampleLen);
-    sv('#ni-style-mode',      cfg.styleMode      ?? DEFAULT_SETTINGS.styleMode);
+    sv('#ni-style-inj-pos2', cfg.styleInjPos ?? DEFAULT_SETTINGS.styleInjPos);
+    sv('#ni-style-inj-depth2', cfg.styleInjDepth ?? DEFAULT_SETTINGS.styleInjDepth);
+    sv('#ni-style-inj-role2', cfg.styleInjRole ?? DEFAULT_SETTINGS.styleInjRole);
+    sv('#ni-style-sample-len', cfg.styleSampleLen ?? DEFAULT_SETTINGS.styleSampleLen);
+    sv('#ni-style-mode', cfg.styleMode ?? DEFAULT_SETTINGS.styleMode);
     const stylePtEl = q('#ni-style-pt-content');
     if (stylePtEl) stylePtEl.value = cfg.stylePrompt || STYLE_PROMPT;
     const devPtEl = q('#ni-dev-pt-content');
@@ -1030,9 +1033,9 @@ function syncSettingsToUI() {
     }
     niStyleSyncMode();
     niRenderUserSubUI();
-    sv('#ni-chunk-kb',     cfg.chunkKb     ?? DEFAULT_SETTINGS.chunkKb);
-    sv('#ni-api-timeout',  cfg.apiTimeoutMin ?? DEFAULT_SETTINGS.apiTimeoutMin);
-    sv('#ni-rate-limit',   cfg.apiRateLimit  ?? DEFAULT_SETTINGS.apiRateLimit);
+    sv('#ni-chunk-kb', cfg.chunkKb ?? DEFAULT_SETTINGS.chunkKb);
+    sv('#ni-api-timeout', cfg.apiTimeoutMin ?? DEFAULT_SETTINGS.apiTimeoutMin);
+    sv('#ni-rate-limit', cfg.apiRateLimit ?? DEFAULT_SETTINGS.apiRateLimit);
     sv('#ni-api-concurrency', cfg.apiConcurrency ?? DEFAULT_SETTINGS.apiConcurrency);
     sv('#ni-vec-rate-limit', cfg.vecRateLimit ?? DEFAULT_SETTINGS.vecRateLimit);
     sv('#ni-vec-concurrency', cfg.vecConcurrency ?? DEFAULT_SETTINGS.vecConcurrency);
@@ -1062,7 +1065,7 @@ function syncSettingsToUI() {
 // ============================================================
 // DOM 工具
 // ============================================================
-const q  = sel => document.querySelector(sel);
+const q = sel => document.querySelector(sel);
 const qa = sel => document.querySelectorAll(sel);
 const sv = (sel, val) => { const el = q(sel); if (el) el.value = val; };
 let _niTopbarIconToggleBound = false;
@@ -1162,18 +1165,18 @@ function niBindTopbarIconToggleHandlers() {
     if (_niTopbarIconToggleBound) return;
     _niTopbarIconToggleBound = true;
     $(document)
-        .on('click.niTopbarIconToggle', '#ni-toggle-topbar-icon', function(e) {
+        .on('click.niTopbarIconToggle', '#ni-toggle-topbar-icon', function (e) {
             e.preventDefault();
             e.stopPropagation();
             niSetTopbarIconVisible(!niTopbarIconVisible());
         })
-        .on('keydown.niTopbarIconToggle', '#ni-toggle-topbar-icon', function(e) {
+        .on('keydown.niTopbarIconToggle', '#ni-toggle-topbar-icon', function (e) {
             if (e.key !== 'Enter' && e.key !== ' ') return;
             e.preventDefault();
             e.stopPropagation();
             niSetTopbarIconVisible(!niTopbarIconVisible());
         })
-        .on('click.niTopbarIconToggle', '#extensionsMenuButton', function() {
+        .on('click.niTopbarIconToggle', '#extensionsMenuButton', function () {
             setTimeout(niEnsureExtensionsMenuTopbarToggle, 0);
             setTimeout(niEnsureExtensionsMenuTopbarToggle, 120);
         });
@@ -1262,7 +1265,7 @@ window.niTogglePrompt = niTogglePrompt;
 // 全局提示词面板
 // ============================================================
 function niToggleGlobalPrompt() {
-    const pb  = q('#ni-global-pb');
+    const pb = q('#ni-global-pb');
     const btn = q('#ni-global-prompt-btn');
     const isOn = pb?.classList.toggle('on');
     btn?.classList.toggle('active', isOn);
@@ -1292,7 +1295,7 @@ function niSyncRoleplayToDepth() {
 }
 
 function niToggleStagePrompt() {
-    const pb  = q('#ni-stage-pb');
+    const pb = q('#ni-stage-pb');
     const btn = q('#ni-stage-prompt-btn');
     const isOn = pb?.classList.toggle('on');
     btn?.classList.toggle('active', isOn);
@@ -1456,7 +1459,7 @@ function niRenderVectorCompatibilityHint() {
     }
 }
 
-let niInvalidateVectorRecallCache = () => {};
+let niInvalidateVectorRecallCache = () => { };
 
 async function niHandleVectorRowsChanged(rows = [], { novelKey = S.novelKey } = {}) {
     const activeNovelKey = String(S.novelKey || '');
@@ -2658,11 +2661,11 @@ function niGetUserSubOutputName() {
     try {
         const ctx = getContext?.();
         candidates.push(ctx?.name1);
-    } catch (_) {}
+    } catch (_) { }
     candidates.push(name1);
     try {
         candidates.push(substituteParams('{{user}}'));
-    } catch (_) {}
+    } catch (_) { }
     const name = candidates
         .map(v => String(v || '').trim())
         .find(v => v && v !== '{{user}}');
@@ -3003,7 +3006,7 @@ async function niCheckFillBtnVisibility() {
         const fb = q('#ni-btn-vec-fill');
         S._vecFillVisible = hasMissing;
         if (fb && !S._vecRunning) fb.style.display = hasMissing ? 'flex' : 'none';
-    } catch(e) {
+    } catch (e) {
         console.warn('[NI] niCheckFillBtnVisibility 失败:', e);
     } finally {
         S._vecCheckPending = false;
@@ -3298,14 +3301,14 @@ async function onPromptReady(eventData) {
     niLoadDeviationStateFromChat({ allowLegacyMigration: false, collapsed: true, syncUI: false });
 
     // 读取各自的注入配置
-    const vecPos   = cfg.vecInjPos   ?? DEFAULT_SETTINGS.vecInjPos;
-    const vecDepth = cfg.injDepth    ?? DEFAULT_SETTINGS.injDepth;
-    const vecRole  = cfg.vecInjRole  ?? DEFAULT_SETTINGS.vecInjRole;
-    const charPos  = cfg.charInjPos  ?? DEFAULT_SETTINGS.charInjPos;
-    const charDepth= cfg.charInjDepth?? DEFAULT_SETTINGS.charInjDepth;
+    const vecPos = cfg.vecInjPos ?? DEFAULT_SETTINGS.vecInjPos;
+    const vecDepth = cfg.injDepth ?? DEFAULT_SETTINGS.injDepth;
+    const vecRole = cfg.vecInjRole ?? DEFAULT_SETTINGS.vecInjRole;
+    const charPos = cfg.charInjPos ?? DEFAULT_SETTINGS.charInjPos;
+    const charDepth = cfg.charInjDepth ?? DEFAULT_SETTINGS.charInjDepth;
     const charRole = cfg.charInjRole ?? DEFAULT_SETTINGS.charInjRole;
-    const plotPos  = cfg.plotInjPos  ?? DEFAULT_SETTINGS.plotInjPos;
-    const plotDepth= cfg.plotInjDepth?? DEFAULT_SETTINGS.plotInjDepth;
+    const plotPos = cfg.plotInjPos ?? DEFAULT_SETTINGS.plotInjPos;
+    const plotDepth = cfg.plotInjDepth ?? DEFAULT_SETTINGS.plotInjDepth;
     const plotRole = cfg.plotInjRole ?? DEFAULT_SETTINGS.plotInjRole;
 
     // 分离向量召回与普通直注，并统一解析穿书模式下真正会参与本轮的阶段。
@@ -3331,8 +3334,8 @@ async function onPromptReady(eventData) {
         const nodeContext = niBuildCurrentStageNodeRecallQuery(vectorRecallScope, curTbNode);
 
         // 按用户设置取消息条数；各条消息单独提取后加权召回
-        const msgTag    = (extension_settings[EXT_NAME]?.vecMsgTag || '').trim();
-        const msgCount  = extension_settings[EXT_NAME]?.vecMsgCount ?? DEFAULT_SETTINGS.vecMsgCount;
+        const msgTag = (extension_settings[EXT_NAME]?.vecMsgTag || '').trim();
+        const msgCount = extension_settings[EXT_NAME]?.vecMsgCount ?? DEFAULT_SETTINGS.vecMsgCount;
         const recentMsgs = niSelectRecentVectorMessageTexts(chat, msgCount, msgTag);
 
         // 构造加权 queries：最新条权重1.0，每往前一条×0.5
@@ -3405,23 +3408,23 @@ async function onPromptReady(eventData) {
                 ? [`[用户扮演原著角色资料：<user>（原著角色：${c.name}；${c.role || '其他'}）]`]
                 : [`[原著角色NPC：${c.name}（${c.role || '其他'}）]`];
             const showRaw = c.showRaw !== false;
-            const showAi  = niGetCharAiShowEnabled(idx);
+            const showAi = niGetCharAiShowEnabled(idx);
             const aiProfile = niGetCharAiProfile(idx);
             if (showAi && aiProfile) {
                 if (typeof aiProfile === 'object') {
                     const p = aiProfile;
-                    if (p.identity)    lines.push(`身份：${p.identity}`);
-                    if (p.appearance)  lines.push(`外貌：${p.appearance}`);
+                    if (p.identity) lines.push(`身份：${p.identity}`);
+                    if (p.appearance) lines.push(`外貌：${p.appearance}`);
                     if (p.personality) lines.push(`性格：${p.personality}`);
-                    if (p.relations)   lines.push(`关系：${p.relations}`);
+                    if (p.relations) lines.push(`关系：${p.relations}`);
                 } else {
                     lines.push(aiProfile);
                 }
             } else if (showRaw) {
-                if (c.identity)    lines.push(`身份：${c.identity}`);
-                if (c.appearance)  lines.push(`外貌：${c.appearance}`);
+                if (c.identity) lines.push(`身份：${c.identity}`);
+                if (c.appearance) lines.push(`外貌：${c.appearance}`);
                 if (c.personality) lines.push(`性格：${c.personality}`);
-                if (c.relations)   lines.push(`关系：${c.relations}`);
+                if (c.relations) lines.push(`关系：${c.relations}`);
             }
             if (lines.length > 1) charLines.push(lines.join('\n'));
         });
@@ -3438,9 +3441,9 @@ async function onPromptReady(eventData) {
     }
 
     // ④ 世界设定注入
-    const worldPos   = cfg.worldInjPos   ?? DEFAULT_SETTINGS.worldInjPos;
+    const worldPos = cfg.worldInjPos ?? DEFAULT_SETTINGS.worldInjPos;
     const worldDepth = cfg.worldInjDepth ?? DEFAULT_SETTINGS.worldInjDepth;
-    const worldRole  = cfg.worldInjRole  ?? DEFAULT_SETTINGS.worldInjRole;
+    const worldRole = cfg.worldInjRole ?? DEFAULT_SETTINGS.worldInjRole;
     const worldContent = niBuildWorldInjectionText(niGetWorldCategories());
     if (worldContent) {
         doInject(`${EXT_NAME}_world`, worldContent, worldPos, worldDepth, worldRole);
@@ -3450,18 +3453,18 @@ async function onPromptReady(eventData) {
     const deviationGuide = niGetDeviationGuideText({ preferUI: true }).trim();
     if (deviationGuide) {
         S.deviationGuide = deviationGuide;
-        const devPos   = cfg.devInjPos   ?? DEFAULT_SETTINGS.devInjPos;
+        const devPos = cfg.devInjPos ?? DEFAULT_SETTINGS.devInjPos;
         const devDepth = cfg.devInjDepth ?? DEFAULT_SETTINGS.devInjDepth;
-        const devRole  = cfg.devInjRole  ?? DEFAULT_SETTINGS.devInjRole;
+        const devRole = cfg.devInjRole ?? DEFAULT_SETTINGS.devInjRole;
         doInject(`${EXT_NAME}_dev`, `[当前剧情偏差约束]\n${deviationGuide}\n[/当前剧情偏差约束]`, devPos, devDepth, devRole);
     }
 
     // ── 文风注入 ──
-    const styleGuide   = (q('#ni-style-result')?.value || S.styleGuide || '').trim();
+    const styleGuide = (q('#ni-style-result')?.value || S.styleGuide || '').trim();
     if (styleGuide) {
-        const stylePos   = cfg.styleInjPos   ?? DEFAULT_SETTINGS.styleInjPos;
+        const stylePos = cfg.styleInjPos ?? DEFAULT_SETTINGS.styleInjPos;
         const styleDepth = cfg.styleInjDepth ?? DEFAULT_SETTINGS.styleInjDepth;
-        const styleRole  = cfg.styleInjRole  ?? DEFAULT_SETTINGS.styleInjRole;
+        const styleRole = cfg.styleInjRole ?? DEFAULT_SETTINGS.styleInjRole;
         doInject(`${EXT_NAME}_style`, `[文风执行指南]\n${styleGuide}\n[/文风执行指南]`, stylePos, styleDepth, styleRole);
     }
 
@@ -3676,7 +3679,7 @@ jQuery(async () => {
     try {
         const scriptModule = await import('/script.js');
         if (scriptModule.doNavbarIconClick) _niNavbarClick = scriptModule.doNavbarIconClick;
-    } catch (_) {}
+    } catch (_) { }
 
     const niToggle = $('#ni_drawer .drawer-toggle');
     if (typeof _niNavbarClick === 'function') {
@@ -3686,7 +3689,7 @@ jQuery(async () => {
         // 旧版酒馆：手动开关
         $('#ni_drawer_content').attr('data-slide-toggle', 'hidden').css('display', 'none');
         niToggle.on('click', function () {
-            const icon    = $('#ni_drawer_icon');
+            const icon = $('#ni_drawer_icon');
             const content = $('#ni_drawer_content');
             if (icon.hasClass('closedIcon')) {
                 // 关闭其他已打开的 drawer
@@ -3723,7 +3726,7 @@ jQuery(async () => {
         e.stopPropagation();
         niOnDrop(e.originalEvent);
     });
-    $app.on('change', '#ni-fi', function() { niOnFile(this); });
+    $app.on('change', '#ni-fi', function () { niOnFile(this); });
 
     // 清洗区按钮
     $app.on('click', '#ni-clean-cfg-btn', () => niTogglePanel('ni-clean-api', 'ni-clean-cfg-btn'));
@@ -3734,13 +3737,13 @@ jQuery(async () => {
         niHandleCleanButtonClick(false);
     });
     $app.on('click', '#ni-btn-retry', () => niHandleCleanButtonClick(false));
-    $app.on('click', '#ni-btn-skip',  () => niSkipChunk());
+    $app.on('click', '#ni-btn-skip', () => niSkipChunk());
     $app.on('click', '#ni-btn-pause', () => niPauseClean());
-    $app.on('click', '.ni-chunk-run-btn', function() {
+    $app.on('click', '.ni-chunk-run-btn', function () {
         const i = parseInt(this.dataset.chunkIdx);
         if (!isNaN(i)) niRunSingleChunk(i);
     });
-    $app.on('click', '.ni-chunk-preview-btn', function() {
+    $app.on('click', '.ni-chunk-preview-btn', function () {
         const i = Number(this.dataset.chunkIdx);
         if (Number.isInteger(i) && i >= 0) niCleanRequestView.showPreview(i);
     });
@@ -3748,18 +3751,18 @@ jQuery(async () => {
     $app.on('click', '#ni-pt-reset, #ni-global-pt-reset, #ni-global-tail-pt-reset, #ni-stream-btn', () => niCleanRequestView.invalidatePreview());
     $app.on('input', '#ni-chunk-kb', () => niOnKbChange());
     $app.on('input', '#ni-api-timeout', () => niSaveSettings());
-    $app.on('input', '#ni-rate-limit',   () => niSaveSettings());
+    $app.on('input', '#ni-rate-limit', () => niSaveSettings());
     $app.on('input', '#ni-api-concurrency', () => niSaveSettings());
     $app.on('input', '#ni-vec-rate-limit', () => niSaveSettings());
     $app.on('input', '#ni-vec-concurrency', () => niSaveSettings());
     $app.on('change', '#ni-vec-batch-size', () => niSaveSettings());
 
     // 流式开关
-    $app.on('change', '#ni-clean-stream', function() {
+    $app.on('change', '#ni-clean-stream', function () {
         niSaveSettings();
     });
     // 自动续跑清洗开关
-    $app.on('click', '#ni-clean-auto-resume-btn', function() {
+    $app.on('click', '#ni-clean-auto-resume-btn', function () {
         const cb = q('#ni-clean-auto-resume');
         const pill = q('#ni-clean-auto-resume-pill');
         if (!cb) return;
@@ -3771,10 +3774,10 @@ jQuery(async () => {
         const modal = q('#ni-clean-done-modal');
         if (modal) modal.style.display = 'none';
     });
-    $app.on('click', '#ni-clean-done-modal', function(e) {
+    $app.on('click', '#ni-clean-done-modal', function (e) {
         if (e.target === this) this.style.display = 'none';
     });
-    $app.on('click', '#ni-stream-btn', function() {
+    $app.on('click', '#ni-stream-btn', function () {
         const cb = q('#ni-clean-stream');
         const pill = q('#ni-stream-pill');
         if (!cb) return;
@@ -3845,8 +3848,8 @@ jQuery(async () => {
     $app.on('click', '#ni-btn-vec-fill', () => niVecFillMissing());    // 补全缺失向量块
 
     // 向量化阶段面板内按钮
-    $app.on('click', '#ni-vsp-all',     () => { qa('#ni-vec-stage-selector .ni-vec-stage-chk').forEach(c => c.checked = true); });
-    $app.on('click', '#ni-vsp-none',    () => { qa('#ni-vec-stage-selector .ni-vec-stage-chk').forEach(c => c.checked = false); });
+    $app.on('click', '#ni-vsp-all', () => { qa('#ni-vec-stage-selector .ni-vec-stage-chk').forEach(c => c.checked = true); });
+    $app.on('click', '#ni-vsp-none', () => { qa('#ni-vec-stage-selector .ni-vec-stage-chk').forEach(c => c.checked = false); });
     $app.on('click', '#ni-vsp-pending', () => {
         qa('#ni-vec-stage-selector .ni-vec-stage-chk').forEach(c => {
             const idx = parseInt(c.value);
@@ -3898,7 +3901,7 @@ jQuery(async () => {
             if (chunks.length > 0) {
                 msg += '各阶段实际向量块数:\n';
                 let hasAnomaly = false;
-                Object.entries(stageCount).sort((a,b)=>a[0]-b[0]).forEach(([si, n]) => {
+                Object.entries(stageCount).sort((a, b) => a[0] - b[0]).forEach(([si, n]) => {
                     msg += `  第${si}阶段: ${n} 块\n`;
                 });
                 // 检测异常：标记已向量但实际0块
@@ -3926,7 +3929,7 @@ jQuery(async () => {
             } else {
                 alert(msg);
             }
-        } catch(e) {
+        } catch (e) {
             alert('诊断失败: ' + e.message);
         }
     });
@@ -3935,7 +3938,7 @@ jQuery(async () => {
         const modal = q('#ni-vec-debug-modal');
         if (modal) modal.style.display = 'none';
     });
-    $app.on('click', '#ni-vec-debug-modal', function(e) {
+    $app.on('click', '#ni-vec-debug-modal', function (e) {
         if (e.target === this) this.style.display = 'none';
     });
 
@@ -3952,7 +3955,7 @@ jQuery(async () => {
     });
     $app.on('input change', '#ni-inj-depth, #ni-recall-topk, #ni-recall-thresh, #ni-vec-msg-tag, #ni-vec-msg-count, #ni-vec-inj-pos, #ni-vec-inj-role, #ni-char-inj-pos, #ni-char-inj-depth, #ni-char-inj-role, #ni-plot-inj-pos, #ni-plot-inj-depth, #ni-plot-inj-role, #ni-plot-inj-max-tokens, #ni-dev-inj-pos, #ni-dev-inj-depth, #ni-dev-inj-role, #ni-global-head-inj-pos, #ni-global-head-inj-depth, #ni-global-head-inj-role, #ni-global-tail-inj-pos, #ni-global-tail-inj-depth, #ni-global-tail-inj-role', () => niSaveSettings());
     $app.on('input change', '#ni-plot-inj-max-tokens', () => niUpdateStageInjectionBudgetNote());
-    $app.on('input change', '#ni-raw-inj-mode', async function() {
+    $app.on('input change', '#ni-raw-inj-mode', async function () {
         const cfg = extension_settings[EXT_NAME] || {};
         cfg.rawInjMode = niNormalizeRawInjMode(this.value);
         saveSettingsDebounced();
@@ -3960,7 +3963,7 @@ jQuery(async () => {
     }); // 直接采用本次选择，切换后立即刷新 token 估算与注入模式
 
     // 注入设置手风琴切换
-    $app.on('click', '.ni-inj-acc-header', function() {
+    $app.on('click', '.ni-inj-acc-header', function () {
         const header = $(this);
         const key = header.data('ni-acc');
         const panel = q(`#ni-inj-panel-${key}`);
@@ -3987,7 +3990,7 @@ jQuery(async () => {
 
     // 世界设定：分类生成提示词
     $app.on('click', '#ni-world-prompt-btn', () => niTogglePanel('ni-world-pb', 'ni-world-prompt-btn'));
-    $app.on('input change', '.ni-world-prompt-textarea', function() {
+    $app.on('input change', '.ni-world-prompt-textarea', function () {
         niWorldSavePrompt(this.value);
     });
 
@@ -4007,23 +4010,23 @@ jQuery(async () => {
     $app.on('input change', '#ni-user-sub-prompt-preview', () => {
         niSaveUserSubPromptFromUI();
     });
-    $app.on('change', '#ni-user-sub-chk', async function() {
+    $app.on('change', '#ni-user-sub-chk', async function () {
         await niSaveUserSubFromUI({ rerender: true });
         await niPersistUserSubConfig({ immediate: true });
     });
-    $app.on('click', '.ni-user-sub-mode-btn', async function() {
+    $app.on('click', '.ni-user-sub-mode-btn', async function () {
         const cfg = niGetUserSubConfig();
         cfg.userSubMode = niNormalizeUserSubMode(this.dataset.userSubMode);
         niRefreshUserSubDependents({ rerenderUserSub: true });
         await niPersistUserSubConfig({ immediate: true });
     });
     // 代入角色可搜索选择器：点开/过滤/选择
-    $app.on('click', '#ni-user-sub-char-toggle', function(e) {
+    $app.on('click', '#ni-user-sub-char-toggle', function (e) {
         e.stopPropagation();
         niToggleUserSubCharPicker();
     });
     $app.on('click', '#ni-user-sub-char-panel', e => e.stopPropagation());
-    $app.on('click', '#ni-user-sub-char-picker .ni-char-picker-option', async function() {
+    $app.on('click', '#ni-user-sub-char-picker .ni-char-picker-option', async function () {
         const cfg = niGetUserSubConfig();
         const idx = this.dataset.charIdx || '';
         niSelectUserSubChar(idx);
@@ -4033,10 +4036,10 @@ jQuery(async () => {
         niRefreshUserSubDependents({ rerenderUserSub: true });
         await niPersistUserSubConfig({ immediate: true });
     });
-    $app.on('input', '#ni-user-sub-char-search', function() {
+    $app.on('input', '#ni-user-sub-char-search', function () {
         niRenderUserSubCharPicker(this.value);
     });
-    $app.on('keydown', '#ni-user-sub-char-search', function(e) {
+    $app.on('keydown', '#ni-user-sub-char-search', function (e) {
         if (e.key === 'Escape') {
             e.preventDefault();
             niCloseUserSubCharPicker();
@@ -4049,10 +4052,10 @@ jQuery(async () => {
         }
     });
     // 点击面板外任意处关闭
-    $app.on('click', function(e) {
+    $app.on('click', function (e) {
         if (!e.target.closest?.('#ni-user-sub-char-picker')) niCloseUserSubCharPicker();
     });
-    $app.on('click', '#ni-user-sub-add', async function() {
+    $app.on('click', '#ni-user-sub-add', async function () {
         const cfg = niGetUserSubConfig();
         const c = S.characters[parseInt(cfg.userSubCharIdx, 10)] || null;
         cfg.userSubAliases = niReadUserSubAliasesFromUI();
@@ -4066,11 +4069,11 @@ jQuery(async () => {
         const last = q('#ni-user-sub-list .ni-user-sub-row:last-child .ni-user-sub-name');
         last?.focus();
     });
-    $app.on('click', '#ni-user-sub-reset', async function() {
+    $app.on('click', '#ni-user-sub-reset', async function () {
         await niSaveUserSubChatStates({});
         niRefreshUserSubDependents({ rerenderUserSub: true });
     });
-    $app.on('change', '.ni-user-sub-enabled', async function() {
+    $app.on('change', '.ni-user-sub-enabled', async function () {
         const row = this.closest('.ni-user-sub-row');
         await niSaveUserSubRowState(row);
         niRefreshUserSubDependents();
@@ -4078,14 +4081,14 @@ jQuery(async () => {
     $app.on('input', '.ni-user-sub-name', () => {
         niSaveUserSubFromUI();
     });
-    $app.on('change', '.ni-user-sub-name', async function() {
+    $app.on('change', '.ni-user-sub-name', async function () {
         const row = this.closest('.ni-user-sub-row');
         await niMigrateUserSubRowState(row);
         niSaveUserSubFromUI();
         await niSaveUserSubRowState(row);
         niRefreshUserSubDependents();
     });
-    $app.on('click', '.ni-user-sub-del', async function() {
+    $app.on('click', '.ni-user-sub-del', async function () {
         const row = this.closest('.ni-user-sub-row');
         await niDeleteUserSubRowState(row);
         row?.remove();
@@ -4094,7 +4097,7 @@ jQuery(async () => {
     });
 
     // 底栏导航
-    $app.on('click', '.ni-nav-btn', function() {
+    $app.on('click', '.ni-nav-btn', function () {
         const page = $(this).data('page');
         if (page) {
             niSwitchPage(page, this);
@@ -4106,7 +4109,7 @@ jQuery(async () => {
     });
 
     // 剧情 tab
-    $app.on('click', '#ni-pg-plot .ni-tab', function() {
+    $app.on('click', '#ni-pg-plot .ni-tab', function () {
         const tab = $(this).data('tab');
         if (tab) niSwitchTab(tab, this);
     });
@@ -4122,14 +4125,14 @@ jQuery(async () => {
     $app.on('click', '#ni-dev-prompt-btn', () => {
         niTogglePanel('ni-dev-pb', 'ni-dev-prompt-btn');
     });
-    $app.on('click', '#ni-dev-facts-history-btn', function() {
+    $app.on('click', '#ni-dev-facts-history-btn', function () {
         const panel = q('#ni-dev-facts-history');
         if (!panel) return;
         const open = panel.hidden;
         panel.hidden = !open;
         this.setAttribute('aria-expanded', String(open));
     });
-    $app.on('click', '#ni-dev-facts-history-clear', async function(e) {
+    $app.on('click', '#ni-dev-facts-history-clear', async function (e) {
         e.preventDefault();
         e.stopPropagation();
         if (!Array.isArray(S.devFactHistory) || !S.devFactHistory.length) return;
@@ -4138,7 +4141,7 @@ jQuery(async () => {
         await niQueueDeviationGuideSave({ immediate: true });
         niSyncDeviationResultUI({ preserveBody: true });
     });
-    $app.on('click', '#ni-dev-facts-edit-toggle', async function() {
+    $app.on('click', '#ni-dev-facts-edit-toggle', async function () {
         const editing = this.getAttribute('aria-expanded') === 'true';
         if (!editing) {
             this.setAttribute('aria-expanded', 'true');
@@ -4159,10 +4162,10 @@ jQuery(async () => {
         await niQueueDeviationGuideSave({ immediate: true });
         niSyncDeviationResultUI({ preserveBody: true });
     });
-    $app.on('input', '.ni-dev-fact-inline-input', function() {
+    $app.on('input', '.ni-dev-fact-inline-input', function () {
         niResizeDeviationFactInlineInput(this);
     });
-    $app.on('click', '.ni-dev-fact-remove', function(e) {
+    $app.on('click', '.ni-dev-fact-remove', function (e) {
         e.preventDefault();
         const row = this.closest('.ni-dev-fact-row-editing');
         if (!row) return;
@@ -4171,7 +4174,7 @@ jQuery(async () => {
         row.remove();
         (nextInput || q('#ni-dev-fact-add'))?.focus();
     });
-    $app.on('click', '#ni-dev-fact-add', function(e) {
+    $app.on('click', '#ni-dev-fact-add', function (e) {
         e.preventDefault();
         niAppendDeviationFactInlineDraft();
     });
@@ -4200,7 +4203,7 @@ jQuery(async () => {
         if (el) el.value = DEV_PROMPT;
         niSaveSettings();
     });
-    $app.on('input', '#ni-dev-current-constraint, #ni-dev-preserved-facts', function() {
+    $app.on('input', '#ni-dev-current-constraint, #ni-dev-preserved-facts', function () {
         const sections = niUpdateDeviationSectionsFromUI();
         if (!niBuildDeviationGuideFromSections(sections).trim()) {
             S.devCoveredFloor = 0;
@@ -4209,7 +4212,7 @@ jQuery(async () => {
         niSyncDeviationResultUI({ preserveBody: true });
         niQueueDeviationGuideSave();
     });
-    $app.on('blur', '#ni-dev-current-constraint, #ni-dev-preserved-facts', async function() {
+    $app.on('blur', '#ni-dev-current-constraint, #ni-dev-preserved-facts', async function () {
         const sections = niUpdateDeviationSectionsFromUI();
         if (!niBuildDeviationGuideFromSections(sections).trim()) {
             S.devCoveredFloor = 0;
@@ -4226,7 +4229,7 @@ jQuery(async () => {
     $app.on('click', '#ni-dev-result-toggle', (e) => {
         if (e.target?.closest?.('#ni-dev-retry-btn')) return;
         const body = q('#ni-dev-result-body');
-        const btn  = q('#ni-dev-result-toggle > i:last-child');
+        const btn = q('#ni-dev-result-toggle > i:last-child');
         if (!body) return;
         const isOpen = body.style.display !== 'none';
         body.style.display = isOpen ? 'none' : 'block';
@@ -4234,7 +4237,7 @@ jQuery(async () => {
     });
 
     // 剧情tab切换时记录当前tab，并根据是否时间轴隐藏删除/编辑按钮
-    $app.on('click', '.ni-plot-tab-row .ni-tab[data-tab]', function() {
+    $app.on('click', '.ni-plot-tab-row .ni-tab[data-tab]', function () {
         niSetCurrentPlotTab($(this).data('tab') || 'timeline');
         niSyncPlotActionButtons(true);
     });
@@ -4242,7 +4245,7 @@ jQuery(async () => {
     $app.on('click', '#ni-plot-link-btn', () => niRepairBranchLinks());
     $app.on('click', '#ni-plot-add-btn', () => {
         const currentPlotTab = niGetCurrentPlotTab();
-        const type = ['main','sub','pivot'].includes(currentPlotTab) ? currentPlotTab : 'main';
+        const type = ['main', 'sub', 'pivot'].includes(currentPlotTab) ? currentPlotTab : 'main';
         niOpenPlotModal('add', type, null);
     });
     // 剧情事件 编辑模式
@@ -4260,19 +4263,19 @@ jQuery(async () => {
     });
     $app.on('click', '#ni-plot-modal-cancel', () => niClosePlotModal());
     // modal 点背景关闭
-    $app.on('click', '#ni-plot-modal', function(e) {
+    $app.on('click', '#ni-plot-modal', function (e) {
         if (!e.target.closest?.('#ni-plot-main-picker')) niClosePivotMainPicker();
         if (e.target === this) niClosePlotModal();
     });
-    $app.on('click', '#ni-plot-main-picker-toggle', function(e) {
+    $app.on('click', '#ni-plot-main-picker-toggle', function (e) {
         e.stopPropagation();
         niTogglePivotMainPicker();
     });
     $app.on('click', '#ni-plot-main-picker-panel', e => e.stopPropagation());
-    $app.on('input', '#ni-plot-main-picker-search', function() {
+    $app.on('input', '#ni-plot-main-picker-search', function () {
         niFilterPivotMainPicker(this.value);
     });
-    $app.on('keydown', '#ni-plot-main-picker-search', function(e) {
+    $app.on('keydown', '#ni-plot-main-picker-search', function (e) {
         if (e.key === 'Escape') {
             e.preventDefault();
             niClosePivotMainPicker();
@@ -4284,11 +4287,11 @@ jQuery(async () => {
             }
         }
     });
-    $app.on('click', '.ni-main-picker-option', function() {
+    $app.on('click', '.ni-main-picker-option', function () {
         niSelectPivotMain(this.dataset.mainKey || '');
     });
     // modal 类型按钮
-    $app.on('click', '.ni-plot-type-btn', function() {
+    $app.on('click', '.ni-plot-type-btn', function () {
         qa('.ni-plot-type-btn').forEach(b => b.classList.remove('on'));
         this.classList.add('on');
         const type = $(this).data('ptype');
@@ -4297,7 +4300,7 @@ jQuery(async () => {
         niRefreshPlotInsertField(type);
     });
     // 删除模式：点击事件卡选中
-    $app.on('click', '.ni-plot-del-mode .ni-plot-item, .ni-plot-del-mode .ni-tl-item', function(e) {
+    $app.on('click', '.ni-plot-del-mode .ni-plot-item, .ni-plot-del-mode .ni-tl-item', function (e) {
         e.stopPropagation();
         const el = this;
         // 从id反推 type 和 idx
@@ -4312,7 +4315,7 @@ jQuery(async () => {
         el.classList.toggle('ni-plot-selected', niTogglePlotDeleteSelection(key));
     });
     // 编辑模式：点击事件卡弹出编辑框
-    $app.on('click', '.ni-plot-edit-mode .ni-plot-item, .ni-plot-edit-mode .ni-tl-item', function(e) {
+    $app.on('click', '.ni-plot-edit-mode .ni-plot-item, .ni-plot-edit-mode .ni-tl-item', function (e) {
         e.stopPropagation();
         const id = this.id;
         const m1 = id.match(/ni-pi-ni-tp-(main|sub|pivot)-(\d+)/);
@@ -4325,35 +4328,35 @@ jQuery(async () => {
 
     // 阶段划分面板按钮
     $app.on('click', '#ni-stage-map-btn', () => niOpenStagePanel());
-    $app.on('click', '#ni-sp-ai-btn',     () => niAutoStageByPivot());
-    $app.on('click', '.ni-sp-add-btn',    () => niAddStageSlot());
+    $app.on('click', '#ni-sp-ai-btn', () => niAutoStageByPivot());
+    $app.on('click', '.ni-sp-add-btn', () => niAddStageSlot());
     $app.on('click', '.ni-sp-cancel-btn', () => niCloseStagePanel());
-    $app.on('click', '#ni-sp-confirm-btn',() => {
+    $app.on('click', '#ni-sp-confirm-btn', () => {
         niConfirmStageMap();
         void niSaveStageRuntimeSettings({ saveMapping: true });
     });
 
     // 阶段/角色 AI 生成按钮
-    $app.on('click', '#ni-btn-gen-chars',  () => niGenCharsManual());
-    $app.on('click', '.ni-char-ai-one-btn', function(e) {
+    $app.on('click', '#ni-btn-gen-chars', () => niGenCharsManual());
+    $app.on('click', '.ni-char-ai-one-btn', function (e) {
         e.preventDefault();
         e.stopPropagation();
         niGenOneCharManual(Number(this.dataset.charIdx));
     });
-    $app.on('click', '#ni-btn-gen-stages',       () => niGenStagesManual(false));
+    $app.on('click', '#ni-btn-gen-stages', () => niGenStagesManual(false));
     $app.on('click', '#ni-btn-gen-stages-empty', () => niGenStagesManual(true));
 
     // 角色 Tab 切换
-    $app.on('click', '#ni-char-tab-row .ni-tab', function() {
+    $app.on('click', '#ni-char-tab-row .ni-tab', function () {
         niSwitchCharTab($(this).data('role'));
     });
-    $app.on('change', '#ni-char-page-size', function() {
+    $app.on('change', '#ni-char-page-size', function () {
         niSetCharPageSize(this.value);
     });
-    $app.on('change', '#ni-char-page-current', function() {
+    $app.on('change', '#ni-char-page-current', function () {
         niSetCharPage(this.value);
     });
-    $app.on('keydown', '#ni-char-page-size, #ni-char-page-current', function(e) {
+    $app.on('keydown', '#ni-char-page-size, #ni-char-page-current', function (e) {
         if (e.key !== 'Enter') return;
         e.preventDefault();
         if (this.id === 'ni-char-page-size') niSetCharPageSize(this.value);
@@ -4366,7 +4369,7 @@ jQuery(async () => {
         const modal = q('#ni-add-char-modal');
         if (modal) {
             q('#ni-new-char-name').value = '';
-            ['identity','appearance','personality','relations'].forEach(k => {
+            ['identity', 'appearance', 'personality', 'relations'].forEach(k => {
                 const el = q(`#ni-new-char-${k}`);
                 if (el) el.value = '';
             });
@@ -4376,7 +4379,7 @@ jQuery(async () => {
             const fsEl = q('#ni-new-char-firststage');
             if (fsEl) {
                 fsEl.innerHTML = '<option value="">— 不指定 —</option>' +
-                    Array.from({length: S.stageMapN}, (_, k) => k + 1)
+                    Array.from({ length: S.stageMapN }, (_, k) => k + 1)
                         .map(s => `<option value="${s}">第 ${s} 阶段</option>`).join('');
             }
             modal.style.display = 'flex';
@@ -4388,18 +4391,18 @@ jQuery(async () => {
         if (modal) modal.style.display = 'none';
     });
     // 弹窗点背景关闭
-    $app.on('click', '#ni-add-char-modal', function(e) {
+    $app.on('click', '#ni-add-char-modal', function (e) {
         if (e.target === this) this.style.display = 'none';
     });
     // 弹窗确认添加
     $app.on('click', '#ni-add-char-confirm', () => {
-        const name        = q('#ni-new-char-name')?.value?.trim();
-        const role        = q('#ni-new-char-role')?.value || '其他';
-        const gender      = q('#ni-new-char-gender')?.value?.trim()      || '';
-        const identity    = q('#ni-new-char-identity')?.value?.trim()    || '';
-        const appearance  = q('#ni-new-char-appearance')?.value?.trim()  || '';
+        const name = q('#ni-new-char-name')?.value?.trim();
+        const role = q('#ni-new-char-role')?.value || '其他';
+        const gender = q('#ni-new-char-gender')?.value?.trim() || '';
+        const identity = q('#ni-new-char-identity')?.value?.trim() || '';
+        const appearance = q('#ni-new-char-appearance')?.value?.trim() || '';
         const personality = q('#ni-new-char-personality')?.value?.trim() || '';
-        const relations   = q('#ni-new-char-relations')?.value?.trim()   || '';
+        const relations = q('#ni-new-char-relations')?.value?.trim() || '';
         if (!name) { alert('请输入角色姓名'); return; }
         // 登场阶段 → 反查 stageMap 得到 _firstChunkIdx
         const fsVal = q('#ni-new-char-firststage')?.value;
@@ -4418,7 +4421,7 @@ jQuery(async () => {
     // - 删除模式切换
     $app.on('click', '#ni-btn-del-char', () => niToggleCharDel());
     // 删除模式：点击角色卡选中/取消
-    $app.on('click', '.ni-char-card.ni-del-mode', function(e) {
+    $app.on('click', '.ni-char-card.ni-del-mode', function (e) {
         // 不拦截内部按钮/checkbox等的点击
         if ($(e.target).closest('button, a, input, label').length) return;
         const idx = parseInt($(this).attr('id').replace('ni-cc-', ''));
@@ -4431,7 +4434,7 @@ jQuery(async () => {
     $app.on('click', '#ni-char-del-confirm-btn', () => niConfirmCharDel());
 
     // 动态生成元素的事件委托
-    $app.on('click', '.ni-plot-head', function(e) {
+    $app.on('click', '.ni-plot-head', function (e) {
         if (niIsPlotInteractionModeActive()) {
             e.preventDefault();
             return;
@@ -4439,7 +4442,7 @@ jQuery(async () => {
         niTogglePlot($(this).data('plot-id'));
     });
     // Timeline node toggle
-    $app.on('click', '.ni-tl-head', function(e) {
+    $app.on('click', '.ni-tl-head', function (e) {
         if (niIsPlotInteractionModeActive()) {
             e.preventDefault();
             return;
@@ -4448,7 +4451,7 @@ jQuery(async () => {
         q(`#${id}`)?.classList.toggle('open');
     });
     // Timeline branch link: jump to sub tab and expand that sub plot
-    $app.on('click', '.ni-tl-branch-link', function() {
+    $app.on('click', '.ni-tl-branch-link', function () {
         const subIdx = parseInt($(this).data('sub-idx'));
         if (!Number.isFinite(subIdx) || subIdx < 0) return;
         const targetPage = niSetPlotPageForPosition('sub', subIdx, { render: false });
@@ -4465,19 +4468,19 @@ jQuery(async () => {
             }
         }, 60);
     });
-    $app.on('click', '.ni-stage-link', function() {
+    $app.on('click', '.ni-stage-link', function () {
         niJumpToStage(parseInt($(this).data('stage-idx')));
     });
-    $app.on('click', '.ni-char-stage-tag', function() {
+    $app.on('click', '.ni-char-stage-tag', function () {
         niJumpToStage(parseInt($(this).data('stage-idx')));
     });
-    $app.on('click', '.ni-char-edit-btn', function() {
+    $app.on('click', '.ni-char-edit-btn', function () {
         niEditChar(parseInt($(this).data('char-idx')));
     });
-    $app.on('click', '.ni-char-save-btn', async function() {
+    $app.on('click', '.ni-char-save-btn', async function () {
         await niSaveChar(parseInt($(this).data('char-idx')));
     });
-    $app.on('click', '#ni-char-auto-sleep-btn', function() {
+    $app.on('click', '#ni-char-auto-sleep-btn', function () {
         const cfg = extension_settings[EXT_NAME] || {};
         cfg.charAutoSleepEnabled = !niCharAutoSleepEnabled();
         cfg._charAutoSleepInitialized = true;
@@ -4486,7 +4489,7 @@ jQuery(async () => {
         saveSettingsDebounced();
     });
     // 单个角色开关
-    $app.on('click', '.ni-char-chk', function() {
+    $app.on('click', '.ni-char-chk', function () {
         const i = parseInt($(this).data('char-idx'));
         if (!S.characters[i]) return;
         if (niIsUserSubReplaceSelectedChar(i)) {
@@ -4503,7 +4506,7 @@ jQuery(async () => {
         renderCharacters();
     });
     // 原始人设眼睛
-    $app.on('click', '.ni-char-eye-raw', function() {
+    $app.on('click', '.ni-char-eye-raw', function () {
         const i = parseInt($(this).data('char-idx'));
         if (!S.characters[i]) return;
         S.characters[i].showRaw = S.characters[i].showRaw === false ? true : false;
@@ -4511,7 +4514,7 @@ jQuery(async () => {
         renderCharacters();
     });
     // AI人设眼睛
-    $app.on('click', '.ni-char-eye-ai, .ni-char-eye-ai-r', async function() {
+    $app.on('click', '.ni-char-eye-ai, .ni-char-eye-ai-r', async function () {
         const i = parseInt($(this).data('char-idx'));
         if (!S.characters[i]) return;
         await niSetCharAiShowEnabled(i, !niGetCharAiShowEnabled(i));
@@ -4531,7 +4534,7 @@ jQuery(async () => {
         niSaveSettings(); renderCharacters();
     });
     // 阶段抽屉：触发按钮开关
-    $app.on('click', '#ni-drawer-trigger', function(e) {
+    $app.on('click', '#ni-drawer-trigger', function (e) {
         e.stopPropagation();
         const panel = q('#ni-drawer-panel');
         const trigger = q('#ni-drawer-trigger');
@@ -4542,7 +4545,7 @@ jQuery(async () => {
         else q('#ni-drawer-list')?.replaceChildren();
     });
     // 阶段抽屉：点击外部关闭
-    $(document).on('click.ni-drawer', function(e) {
+    $(document).on('click.ni-drawer', function (e) {
         const panel = q('#ni-drawer-panel');
         if (!panel || !panel.classList.contains('open')) return;
         const drawer = q('#ni-stage-drawer');
@@ -4554,25 +4557,25 @@ jQuery(async () => {
     });
     // 阶段抽屉：全选
     // 阶段抽屉：显示/隐藏空阶段
-    $app.on('click', '#ni-drawer-toggle-empty', function(e) {
+    $app.on('click', '#ni-drawer-toggle-empty', function (e) {
         e.preventDefault();
         e.stopPropagation();
         niToggleShowEmptyStages();
         niRenderStageDrawer();
     });
-    $app.on('click', '#ni-drawer-all', function(e) {
+    $app.on('click', '#ni-drawer-all', function (e) {
         e.preventDefault();
         e.stopPropagation();
         niToggleAllStageChars(true);
     });
     // 阶段抽屉：全不选
-    $app.on('click', '#ni-drawer-none', function(e) {
+    $app.on('click', '#ni-drawer-none', function (e) {
         e.preventDefault();
         e.stopPropagation();
         niToggleAllStageChars(false);
     });
     // 阶段抽屉：单个阶段 checkbox
-    $app.on('change', '.ni-drawer-item input[type=checkbox]', function(e) {
+    $app.on('change', '.ni-drawer-item input[type=checkbox]', function (e) {
         e.stopPropagation();
         const idx = parseInt($(this).data('drawer-stage'));
         if (!isNaN(idx)) {
@@ -4581,7 +4584,7 @@ jQuery(async () => {
         }
     });
     // 阶段抽屉：点击 item 行触发
-    $app.on('click', '.ni-drawer-item', function(e) {
+    $app.on('click', '.ni-drawer-item', function (e) {
         e.stopPropagation();
         // checkbox 和 label 内部点击均交由原生行为 + change 事件处理，不重复处理
         if (e.target.type === 'checkbox' || e.target.closest('label')) return;
@@ -4598,13 +4601,13 @@ jQuery(async () => {
     $app.on('click', '#ni-stage-disable-all', () => {
         niSetAllStagesEnabled(false);
     });
-    $app.on('change', '#ni-stage-page-size', function() {
+    $app.on('change', '#ni-stage-page-size', function () {
         niSetStagePageSize(this.value);
     });
-    $app.on('change', '#ni-stage-page-current', function() {
+    $app.on('change', '#ni-stage-page-current', function () {
         niSetStagePage(this.value);
     });
-    $app.on('keydown', '#ni-stage-page-size, #ni-stage-page-current', function(e) {
+    $app.on('keydown', '#ni-stage-page-size, #ni-stage-page-current', function (e) {
         if (e.key !== 'Enter') return;
         e.preventDefault();
         if (this.id === 'ni-stage-page-size') niSetStagePageSize(this.value);
@@ -4612,19 +4615,19 @@ jQuery(async () => {
     });
     $app.on('click', '#ni-stage-page-prev', () => niChangeStagePage(-1));
     $app.on('click', '#ni-stage-page-next', () => niChangeStagePage(1));
-    $app.on('click', '.ni-stg-chk', function() {
+    $app.on('click', '.ni-stg-chk', function () {
         niToggleStage(parseInt($(this).data('stage-idx')), { source: 'manual' });
     });
-    $app.on('click', '.ni-stage-expand-btn', function() {
+    $app.on('click', '.ni-stage-expand-btn', function () {
         niToggleStageBody(parseInt($(this).data('stage-idx')));
     });
-    $app.on('click', '.ni-stage-save-btn', function() {
+    $app.on('click', '.ni-stage-save-btn', function () {
         niSaveStage(parseInt($(this).data('stage-idx')));
     });
-    $app.on('click', '.ni-stage-cancel-btn', function() {
+    $app.on('click', '.ni-stage-cancel-btn', function () {
         niCancelStageEdit(parseInt($(this).data('stage-idx')));
     });
-    $app.on('click', '.ni-node-pill', function() {
+    $app.on('click', '.ni-node-pill', function () {
         const plotType = $(this).data('plot-type');
         const stageIdx = parseInt($(this).data('stage-idx'));
         const container = q(`#ni-pin-${stageIdx}`);
@@ -4652,32 +4655,32 @@ jQuery(async () => {
             $(this).addClass('ni-pill-active');
         }
     });
-    $app.on('click', '.ni-pin-row', function() {
+    $app.on('click', '.ni-pin-row', function () {
         const plotType = $(this).data('plot-type');
         const stageIdx = parseInt($(this).data('stage-idx'));
         const itemIdx = parseInt($(this).data('item-idx'));
         const nodeId = $(this).data('node-id');
         niGoPlot(plotType, stageIdx, itemIdx, nodeId);
     });
-    $app.on('click', '.ni-sp-node-row', function() {
+    $app.on('click', '.ni-sp-node-row', function () {
         niToggleChunkInSlot(parseInt($(this).data('slot-id')), parseInt($(this).data('chunk-idx')));
     });
-    $app.on('click', '.ni-slot-toggle', function(e) {
+    $app.on('click', '.ni-slot-toggle', function (e) {
         if ($(e.target).closest('.ni-slot-del-btn').length) return;
         const sid = String($(this).data('slot-id'));
         if (!window._slotOpenStates) window._slotOpenStates = {};
         window._slotOpenStates[sid] = !window._slotOpenStates[sid];
         niRenderStageSlots();
     });
-    $app.on('click', '.ni-slot-del-btn', function(e) {
+    $app.on('click', '.ni-slot-del-btn', function (e) {
         e.stopPropagation();
         niRemoveStageSlot(parseInt($(this).data('slot-id')));
     });
-    $app.on('change', '.ni-slot-name-input', function() {
+    $app.on('change', '.ni-slot-name-input', function () {
         niSlotRename(parseInt($(this).data('slot-id')), $(this).val());
     });
     // Fix③: 未分配节点区域折叠切换
-    $app.on('click', '#ni-unassigned-head', function() {
+    $app.on('click', '#ni-unassigned-head', function () {
         window._unassignedOpen = !window._unassignedOpen;
         niRenderStageSlots();
     });
@@ -4690,41 +4693,41 @@ jQuery(async () => {
     // 设置 Tab 事件绑定
     // 插件总开关
     $app.on('change', '#ni-plugin-chk', () => niTogglePlugin());
-    $app.on('change', '#ni-autosave-chk', function() {
+    $app.on('change', '#ni-autosave-chk', function () {
         niAutosave.setEnabled(this.checked);
     });
 
     // 外观配色
     $app.on('click', '#ni-theme-toggle-head', () => niThemeEditor.togglePanel());
-    $app.on('change', '#ni-theme-preset', function() {
+    $app.on('change', '#ni-theme-preset', function () {
         niThemeEditor.setPreset(this.value);
     });
-    $app.on('input change', '.ni-theme-color-input', function() {
+    $app.on('input change', '.ni-theme-color-input', function () {
         niThemeEditor.setColor(this.dataset.themeColor, this.value);
     });
-    $app.on('input', '.ni-theme-code', function() {
+    $app.on('input', '.ni-theme-code', function () {
         niThemeEditor.setColorFromText(this.dataset.themeColorCode, this.value);
     });
-    $app.on('blur', '.ni-theme-code', function() {
+    $app.on('blur', '.ni-theme-code', function () {
         niThemeEditor.restoreColorText(this.dataset.themeColorCode);
     });
-    $app.on('change', '#ni-theme-surface-follow', function() {
+    $app.on('change', '#ni-theme-surface-follow', function () {
         niThemeEditor.setSurfaceFollow(this.checked);
     });
-    $app.on('change', '#ni-theme-borderless', function() {
+    $app.on('change', '#ni-theme-borderless', function () {
         niThemeEditor.setBorderless(this.checked);
     });
-    $app.on('change', '#ni-theme-cardless', function() {
+    $app.on('change', '#ni-theme-cardless', function () {
         niThemeEditor.setCardless(this.checked);
     });
-    $app.on('change', '#ni-theme-statusbar-follow', function() {
+    $app.on('change', '#ni-theme-statusbar-follow', function () {
         niThemeEditor.setStatusbarFollow(this.checked);
     });
-    $app.on('change', '#ni-theme-icon-replace', function() {
+    $app.on('change', '#ni-theme-icon-replace', function () {
         niThemeEditor.setIconReplace(this.checked);
     });
     $app.on('click', '#ni-theme-import', () => q('#ni-theme-import-file')?.click());
-    $app.on('change', '#ni-theme-import-file', function() {
+    $app.on('change', '#ni-theme-import-file', function () {
         niThemeEditor.importPresetFile(this.files?.[0]);
         this.value = '';
     });
@@ -4735,7 +4738,7 @@ jQuery(async () => {
 
     // 全局提示词面板
     $app.on('click', '#ni-global-prompt-btn', () => niToggleGlobalPrompt());
-    $app.on('change', '#ni-global-preset-name', function() {
+    $app.on('change', '#ni-global-preset-name', function () {
         extension_settings[EXT_NAME].globalPromptPresetName = this.value;
         niSaveSettings();
         niSyncGlobalPromptSourceUI();
@@ -4745,7 +4748,7 @@ jQuery(async () => {
         niSyncGlobalPromptSourceUI();
         niCleanRequestView.invalidatePreview();
     });
-    $app.on('change', '#ni-global-source-tavern, #ni-global-source-builtin, #ni-global-source-none', function() {
+    $app.on('change', '#ni-global-source-tavern, #ni-global-source-builtin, #ni-global-source-none', function () {
         if (!this.checked) {
             this.checked = true;
             return;
@@ -4753,8 +4756,8 @@ jQuery(async () => {
         if (!extension_settings[EXT_NAME]) extension_settings[EXT_NAME] = {};
         extension_settings[EXT_NAME].globalPromptSource =
             this.id === 'ni-global-source-tavern' ? 'tavern' :
-            this.id === 'ni-global-source-none' ? 'none' :
-            'builtin';
+                this.id === 'ni-global-source-none' ? 'none' :
+                    'builtin';
         niSyncGlobalPromptSourceUI(extension_settings[EXT_NAME]);
         niSaveSettings();
     });
@@ -4805,25 +4808,25 @@ jQuery(async () => {
         q('#ni-lib-save-name') && (q('#ni-lib-save-name').value = '');
     });
     // 小说库 — 加载/删除
-    $app.on('click', '.ni-lib-load-btn', function() {
+    $app.on('click', '.ni-lib-load-btn', function () {
         niLoadNovelSnapshot(parseInt($(this).data('lib-idx')));
     });
-    $app.on('click', '.ni-lib-del-btn', async function() {
+    $app.on('click', '.ni-lib-del-btn', async function () {
         await niDeleteNovelSnapshot(parseInt($(this).data('lib-idx')));
     });
-    $app.on('click', '.ni-lib-update-btn', function() {
+    $app.on('click', '.ni-lib-update-btn', function () {
         niUpdateNovelSnapshot(parseInt($(this).data('lib-idx')));
     });
-    $app.on('click', '.ni-lib-rename-btn', function() {
+    $app.on('click', '.ni-lib-rename-btn', function () {
         niRenameNovelSnapshot(parseInt($(this).data('lib-idx')));
     });
-    $app.on('change', '#ni-lib-page-size', function() {
+    $app.on('change', '#ni-lib-page-size', function () {
         niSetNovelLibraryPageSize(this.value);
     });
-    $app.on('change', '#ni-lib-page-current', function() {
+    $app.on('change', '#ni-lib-page-current', function () {
         niSetNovelLibraryPage(this.value);
     });
-    $app.on('keydown', '#ni-lib-page-size, #ni-lib-page-current', function(e) {
+    $app.on('keydown', '#ni-lib-page-size, #ni-lib-page-current', function (e) {
         if (e.key !== 'Enter') return;
         e.preventDefault();
         if (this.id === 'ni-lib-page-size') niSetNovelLibraryPageSize(this.value);
@@ -4835,7 +4838,7 @@ jQuery(async () => {
     // 导入/导出
     $app.on('click', '#ni-export-btn', () => niExportData());
     $app.on('click', '#ni-import-btn', () => q('#ni-import-fi')?.click());
-    $app.on('change', '#ni-import-fi', function() {
+    $app.on('change', '#ni-import-fi', function () {
         const f = this.files?.[0];
         if (f) { niImportData(f); this.value = ''; }
     });
@@ -4869,10 +4872,10 @@ jQuery(async () => {
     // 采样参数变更 → 保存
     $app.on('change', '#ni-style-sample-len, #ni-style-chunk-sel', () => niSaveSettings());
     // 结果手动编辑 → 同步到 S.styleGuide
-    $app.on('input', '#ni-style-result', function() {
+    $app.on('input', '#ni-style-result', function () {
         S.styleGuide = this.value;
     });
-    $app.on('blur', '#ni-style-result', async function() {
+    $app.on('blur', '#ni-style-result', async function () {
         S.styleGuide = this.value;
         niSaveSettings();
         if (S.novelKey) await niServerSaveHeavy(S.novelKey, S.heavyFileKey);
@@ -4880,7 +4883,7 @@ jQuery(async () => {
     // 结果区收起/展开
     $app.on('click', '#ni-style-result-toggle', () => {
         const body = q('#ni-style-result-body');
-        const btn  = q('#ni-style-result-toggle i:last-child');
+        const btn = q('#ni-style-result-toggle i:last-child');
         if (!body) return;
         const isOpen = body.style.display !== 'none';
         body.style.display = isOpen ? 'none' : 'block';
@@ -4955,14 +4958,17 @@ window.niSaveSettings = function () {
     if (cfg.pluginEnabled !== false) {
         cfg.transBookMode = document.getElementById('ni-tb-chk')?.checked ?? cfg.transBookMode;
     }
-    cfg.tbAdvancePrompt  = document.getElementById('ni-tb-advance-prompt')?.value || cfg.tbAdvancePrompt;
-    cfg.tbInferPrompt    = document.getElementById('ni-tb-infer-prompt')?.value   || cfg.tbInferPrompt;
-    cfg.tbOngoingPrompt  = document.getElementById('ni-tb-ongoing-prompt')?.value || cfg.tbOngoingPrompt;
+    cfg.tbAdvancePrompt = document.getElementById('ni-tb-advance-prompt')?.value || cfg.tbAdvancePrompt;
+    cfg.tbInferPrompt = document.getElementById('ni-tb-infer-prompt')?.value || cfg.tbInferPrompt;
+    cfg.tbOngoingPrompt = document.getElementById('ni-tb-ongoing-prompt')?.value || cfg.tbOngoingPrompt;
     cfg.tbDisplayStatusbar = document.getElementById('ni-tb-display-statusbar')?.checked ?? cfg.tbDisplayStatusbar;
-    cfg.tbDisplayPopup     = document.getElementById('ni-tb-display-popup')?.checked     ?? cfg.tbDisplayPopup;
-    cfg.tbLightRecallMode  = document.getElementById('ni-tb-light-recall-mode')?.checked ?? cfg.tbLightRecallMode;
-    cfg.tbImmersionMode    = document.getElementById('ni-tb-immersion-mode')?.checked ?? cfg.tbImmersionMode;
-    cfg.tbImmersionPrompt  = document.getElementById('ni-tb-immersion-prompt')?.value || cfg.tbImmersionPrompt || TB_DEFAULT_IMMERSION_PROMPT;
+    cfg.tbDisplayPopup = document.getElementById('ni-tb-display-popup')?.checked ?? cfg.tbDisplayPopup;
+    cfg.tbLightRecallMode = document.getElementById('ni-tb-light-recall-mode')?.checked ?? cfg.tbLightRecallMode;
+    cfg.tbImmersionMode = document.getElementById('ni-tb-immersion-mode')?.checked ?? cfg.tbImmersionMode;
+    cfg.tbImmersionPrompt = document.getElementById('ni-tb-immersion-prompt')?.value || cfg.tbImmersionPrompt || TB_DEFAULT_IMMERSION_PROMPT;
+    // 保存滑轨条数
+    cfg.tbWindowPrev = parseInt(document.getElementById('ni-tb-window-prev')?.value ?? cfg.tbWindowPrev ?? 1, 10);
+    cfg.tbWindowNext = parseInt(document.getElementById('ni-tb-window-next')?.value ?? cfg.tbWindowNext ?? 1, 10);
 };
 
 // syncSettingsToUI 补丁：切换到设置页时将穿书字段同步到 UI
@@ -4988,6 +4994,11 @@ const _niSyncSettingsToUIPatched = function () {
     if (immersionModeChkSync) immersionModeChkSync.checked = !!cfg.tbImmersionMode;
     const immersionPromptEl = document.getElementById('ni-tb-immersion-prompt');
     if (immersionPromptEl) immersionPromptEl.value = cfg.tbImmersionPrompt || TB_DEFAULT_IMMERSION_PROMPT;
+    // 恢复界面上的滑轨输入框数值
+    const winPrevEl = document.getElementById('ni-tb-window-prev');
+    if (winPrevEl) winPrevEl.value = cfg.tbWindowPrev ?? 1;
+    const winNextEl = document.getElementById('ni-tb-window-next');
+    if (winNextEl) winNextEl.value = cfg.tbWindowNext ?? 1;
     if (typeof niSyncGlobalPromptSourceUI === 'function') niSyncGlobalPromptSourceUI(cfg);
 };
 window.syncSettingsToUI = _niSyncSettingsToUIPatched;
@@ -5008,7 +5019,7 @@ jQuery(document).ready(function () {
             try {
                 const mod = await import('/script.js');
                 setExtensionPromptFn = mod.setExtensionPrompt || null;
-            } catch (_) {}
+            } catch (_) { }
 
             const _inject = (slotKey, content) => {
                 content = niApplyUserSubstitution(content);
@@ -5056,17 +5067,54 @@ jQuery(document).ready(function () {
                 return;
             }
 
-            // ── 持续提示词：每条消息都注入 ───────────────────────
-            // 节点必须走归档进度推导（niTbGetInjectionNode）：锚点 tbCurIdx 不随
-            // 勾选归档移动，直接按锚点下标取节点会在锚点归档后继续注入已归档内容。
+            // ── 持续提示词：滑轨窗口注入（主支线合并） ───────────────────────
             const nodes = niGetTbNodes();
-            const curNode = niTbGetInjectionNode(nodes) || nodes[0];
+            const curIdx = nodes.findIndex(n => !n.done); // 找到当前走到的主线位置
+            const activeIdx = curIdx >= 0 ? curIdx : 0;
+            const curNode = nodes[activeIdx];
             if (!curNode) return;
+
+            // 读取范围控制器设置（默认前1条、后1条，设为0则不带）
+            const prevCount = Math.max(0, parseInt(cfg.tbWindowPrev ?? 1, 10));
+            const nextCount = Math.max(0, parseInt(cfg.tbWindowNext ?? 1, 10));
+
+            // 格式化函数：把一个节点及其绑定的支线、伏笔全部打包
+            const formatNodeWithSubs = (n, tag) => {
+                let text = `【${tag}】${n.title}：${n.body || '无详细描述'}`;
+                // 绑定支线事件
+                if (Array.isArray(n.sub_notes) && n.sub_notes.length > 0) {
+                    text += `\n  * 关联支线：` + n.sub_notes.join('；');
+                }
+                // 绑定伏笔/分支
+                if (Array.isArray(n.branch_links) && n.branch_links.length > 0) {
+                    text += `\n  * 伏笔线索：` + n.branch_links.join('；');
+                }
+                return text;
+            };
+
+            // 1. 组装前因（已完成但邻近的剧情）
+            const prevNodes = nodes.slice(Math.max(0, activeIdx - prevCount), activeIdx);
+            const prevText = prevNodes.length > 0
+                ? prevNodes.map(n => formatNodeWithSubs(n, '已发生前情')).join('\n') + '\n'
+                : '';
+
+            // 2. 组装当前节点（主线 + 绑定支线）
+            const curText = formatNodeWithSubs(curNode, '当前推进节点');
+
+            // 3. 组装后果（即将发生的后续原著走向）
+            const nextNodes = nodes.slice(activeIdx + 1, activeIdx + 1 + nextCount);
+            const nextText = nextNodes.length > 0
+                ? '\n' + nextNodes.map(n => formatNodeWithSubs(n, '后续走向参考')).join('\n')
+                : '';
+
+            // 最终组装成一条连贯的时间线上下文
+            const fullTimelineBody = `${prevText}${curText}${nextText}`;
 
             const ongoingTpl = (cfg.tbOngoingPrompt || TB_DEFAULT_ONGOING_PROMPT).trim();
             const ongoingContent = ongoingTpl
-                .replace(/{B_TITLE}/g, curNode.title)
-                .replace(/{B_BODY}/g,  curNode.body || '（暂无描述）') + immersionAppend;
+                .replace(/{B_TITLE}/g, `${curNode.title}（含前后关联时间轴）`)
+                .replace(/{B_BODY}/g, fullTimelineBody) + immersionAppend;
+
             _inject(`${EXT_NAME}_tb_ongoing`, ongoingContent);
         });
         eventSource.makeLast?.(event_types.CHAT_COMPLETION_PROMPT_READY, niFinalUserSubPromptRewrite);
@@ -5084,12 +5132,12 @@ jQuery(document).ready(function () {
         setTimeout(() => niTbRenderStoryBar({ resetView: true }), 100);
     };
 
-    eventSource.on(event_types.MESSAGE_RENDERED,            onRendered);
-    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED,  onRendered);
+    eventSource.on(event_types.MESSAGE_RENDERED, onRendered);
+    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, onRendered);
 
     // 真正生成新消息时解钉预览节点：之后的重挂载才允许自动回正到当前节点
     eventSource.on(event_types.MESSAGE_RECEIVED, () => niTbUnpinView());
-    eventSource.on(event_types.MESSAGE_SENT,     () => niTbUnpinView());
+    eventSource.on(event_types.MESSAGE_SENT, () => niTbUnpinView());
 
     // 切换对话：重置状态，重新加载
     eventSource.on(event_types.CHAT_CHANGED, () => {
@@ -5108,6 +5156,8 @@ jQuery(document).ready(function () {
         $app.on('click', '.ni-nav-btn[data-page="plot"], .ni-nav-btn[data-page="settings"]', () => {
             setTimeout(() => niTbInitSettingsUI(), 50);
         });
+        // 用户修改滑轨数字时，自动触发保存
+        $app.on('input change', '#ni-tb-window-prev, #ni-tb-window-next', () => window.niSaveSettings());
     }
     setTimeout(() => niTbInitSettingsUI(), 100);
 
@@ -5141,13 +5191,13 @@ console.log('[NI-TB] 穿书模式模块已加载');
         const parentDoc = (typeof _niPopDoc !== 'undefined') ? _niPopDoc : document;
         return parentDoc.getElementById(id) || document.getElementById(id);
     }
-    function niPopEsc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function niPopEsc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
     // ── 条形码 ──
     function niPopBuildBarcode() {
         const bc = q('ni-pop-barcode');
         if (!bc || bc.children.length) return;
-        [2,1,3,1,2,4,1,2,3,1,4,2,1,3,2,1,4,1,2,3].forEach(w => {
+        [2, 1, 3, 1, 2, 4, 1, 2, 3, 1, 4, 2, 1, 3, 2, 1, 4, 1, 2, 3].forEach(w => {
             const s = document.createElement('span');
             s.style.cssText = 'width:' + w + 'px;height:32px';
             bc.appendChild(s);
@@ -5201,17 +5251,17 @@ console.log('[NI-TB] 穿书模式模块已加载');
         // 优先通过主模块暴露的函数读取
         if (typeof window.niCreateTbSnapshot === 'function') {
             const snapshot = window.niCreateTbSnapshot();
-            const nodes  = snapshot?.nodes || [];
+            const nodes = snapshot?.nodes || [];
             const stages = snapshot?.stages || [];
-            const S      = window._niS;
+            const S = window._niS;
             const curIdx = (S && typeof S.tbCurIdx === 'number') ? S.tbCurIdx : _popCurIdx;
             const viewIdx = (S && typeof S.tbViewIdx === 'number') ? S.tbViewIdx : curIdx;
             return { nodes, stages, curIdx, viewIdx };
         }
         if (typeof window.niGetTbNodes === 'function' && typeof window.niGetTbStages === 'function') {
-            const nodes  = window.niGetTbNodes();
+            const nodes = window.niGetTbNodes();
             const stages = window.niGetTbStages(nodes);
-            const S      = window._niS;
+            const S = window._niS;
             const curIdx = (S && typeof S.tbCurIdx === 'number') ? S.tbCurIdx : _popCurIdx;
             const viewIdx = (S && typeof S.tbViewIdx === 'number') ? S.tbViewIdx : curIdx;
             return { nodes, stages, curIdx, viewIdx };
@@ -5219,7 +5269,7 @@ console.log('[NI-TB] 穿书模式模块已加载');
         // fallback：旧路径
         const cfg = (typeof extension_settings !== 'undefined' && typeof EXT_NAME !== 'undefined')
             ? extension_settings[EXT_NAME] : null;
-        const nodes  = (cfg && Array.isArray(cfg.tbNodes))  ? cfg.tbNodes  : [];
+        const nodes = (cfg && Array.isArray(cfg.tbNodes)) ? cfg.tbNodes : [];
         const stages = (cfg && Array.isArray(cfg.tbStages)) ? cfg.tbStages : [];
         const curIdx = (cfg && typeof cfg.tbCurIdx === 'number') ? cfg.tbCurIdx : _popCurIdx;
         return { nodes, stages, curIdx, viewIdx: curIdx };
@@ -5313,9 +5363,9 @@ console.log('[NI-TB] 穿书模式模块已加载');
         nodes.slice(pagination.startIndex, pagination.endIndex).forEach((n, pageIdx) => {
             const i = pagination.startIndex + pageIdx;
             const gi = n._globalIdx ?? i;
-            const typeMap = { main:'main', sub:'sub', pivot:'pivot', 支线:'sub', 主线:'main', 关键转折:'pivot' };
+            const typeMap = { main: 'main', sub: 'sub', pivot: 'pivot', 支线: 'sub', 主线: 'main', 关键转折: 'pivot' };
             const typeKey = typeMap[n.type] || 'main';
-            const typeLbl = { main:'主线', sub:'支线', pivot:'关键转折' }[typeKey] || (n.type || '');
+            const typeLbl = { main: '主线', sub: '支线', pivot: '关键转折' }[typeKey] || (n.type || '');
             const isDone = !!n.done;
             const isActive = gi === curIdx;
 
@@ -5326,19 +5376,19 @@ console.log('[NI-TB] 穿书模式模块已加载');
             row.id = 'ni-pop-nr' + gi;
             row.className = 'ni-node-row' + (isActive ? ' is-active' : '') + (isDone ? ' is-done' : '');
             row.innerHTML =
-                '<span class="ni-nr-num">' + String(i+1).padStart(2,'0') + '</span>' +
+                '<span class="ni-nr-num">' + String(i + 1).padStart(2, '0') + '</span>' +
                 '<span class="ni-nr-tag ni-tag-' + typeKey + '">' + niPopEsc(typeLbl) + '</span>' +
                 '<span class="ni-nr-title-blk">' +
-                  '<span class="ni-nr-title">' + niPopEsc(n.title) + '</span>' +
-                  (n.time || n.location ? '<div class="ni-nr-meta">' +
-                    (n.time     ? '<span class="ni-nr-meta-item">🕐 ' + niPopEsc(n.time)     + '</span>' : '') +
+                '<span class="ni-nr-title">' + niPopEsc(n.title) + '</span>' +
+                (n.time || n.location ? '<div class="ni-nr-meta">' +
+                    (n.time ? '<span class="ni-nr-meta-item">🕐 ' + niPopEsc(n.time) + '</span>' : '') +
                     (n.location ? '<span class="ni-nr-meta-item">📍 ' + niPopEsc(n.location) + '</span>' : '') +
-                  '</div>' : '') +
+                    '</div>' : '') +
                 '</span>' +
-                '<span class="ni-nr-status"><span class="ni-nr-chk' + (isDone ? ' checked' : '') + '" id="ni-pop-chk'+gi+'">' + (isDone ? '✔' : '') + '</span></span>';
+                '<span class="ni-nr-status"><span class="ni-nr-chk' + (isDone ? ' checked' : '') + '" id="ni-pop-chk' + gi + '">' + (isDone ? '✔' : '') + '</span></span>';
 
             row.title = isActive ? '点击右侧勾选切换归档状态' : '点击切换到此节点';
-            row.addEventListener('click', function(e) {
+            row.addEventListener('click', function (e) {
                 e.preventDefault();
                 if (n.locked) return;
                 if (!e.target.closest('.ni-nr-chk')) {
@@ -5364,10 +5414,10 @@ console.log('[NI-TB] 穿书模式模块已加载');
             g.appendChild(row);
             // 展开区：概括 + 事件 + 伏笔
             {
-                const hasBody  = !!n.body;
-                const hasSubs  = Array.isArray(n.sub_notes)   && n.sub_notes.length > 0;
+                const hasBody = !!n.body;
+                const hasSubs = Array.isArray(n.sub_notes) && n.sub_notes.length > 0;
                 const foreshadows = (n.branch_links || []).filter(l => l.startsWith('【伏笔】')).map(l => l.replace('【伏笔】', '').trim());
-                const hasFore  = foreshadows.length > 0;
+                const hasFore = foreshadows.length > 0;
                 if (hasBody || hasSubs || hasFore || n.desc || n.description) {
                     const dd = document.createElement('div');
                     dd.className = 'ni-node-desc' + (isActive ? ' vis' : '');
@@ -5381,7 +5431,7 @@ console.log('[NI-TB] 穿书模式模块已加载');
                     if (hasSubs) {
                         html += '<div class="ni-nd-section">';
                         n.sub_notes.forEach((s, si) => {
-                            html += '<div class="ni-nd-event"><span class="ni-nd-event-num">' + (si+1) + '</span>' + niPopEsc(s) + '</div>';
+                            html += '<div class="ni-nd-event"><span class="ni-nd-event-num">' + (si + 1) + '</span>' + niPopEsc(s) + '</div>';
                         });
                         html += '</div>';
                     }
@@ -5405,7 +5455,7 @@ console.log('[NI-TB] 穿书模式模块已加载');
             const r = q('ni-pop-nr' + curIdx);
             if (!r) return;
             const g = r.parentElement, l = q('ni-pop-node-list');
-            if (l) l.scrollTop += (g.getBoundingClientRect().top - l.getBoundingClientRect().top) - (l.clientHeight/2) + (g.offsetHeight/2);
+            if (l) l.scrollTop += (g.getBoundingClientRect().top - l.getBoundingClientRect().top) - (l.clientHeight / 2) + (g.offsetHeight / 2);
         });
     }
 
@@ -5421,7 +5471,7 @@ console.log('[NI-TB] 穿书模式模块已加载');
         q('ni-pop-btn-up')?.classList.toggle('disabled', localIdx === 0);
         q('ni-pop-btn-down')?.classList.toggle('disabled', localIdx >= nodes.length - 1);
         const prog = q('ni-pop-nav-prog');
-        if (prog) prog.innerHTML = '<strong>' + (localIdx+1) + '</strong> / ' + nodes.length;
+        if (prog) prog.innerHTML = '<strong>' + (localIdx + 1) + '</strong> / ' + nodes.length;
     }
 
     // ── 更新副标题：阶段•节点标题 #mesID ──
@@ -5433,8 +5483,8 @@ console.log('[NI-TB] 穿书模式模块已加载');
         let stageName = '';
         if (Array.isArray(stages) && stages.length) {
             const s = stages.find(st => st.stageIdx === node.stageIdx)
-                   || stages.find(st => Array.isArray(st.nodes) && st.nodes.some(nd => nd?.id === node.id))
-                   || stages[0];
+                || stages.find(st => Array.isArray(st.nodes) && st.nodes.some(nd => nd?.id === node.id))
+                || stages[0];
             if (s) stageName = s.title || s.name || '';
         }
         let mesID = '';
@@ -5449,7 +5499,7 @@ console.log('[NI-TB] 穿书模式模块已加载');
                     }
                 }
             }
-        } catch(e) {}
+        } catch (e) { }
         const nodeTitle = node.title || '';
         let txt = stageName ? (stageName + '•' + nodeTitle) : nodeTitle;
         if (mesID) txt += ' #' + mesID;
@@ -5470,16 +5520,16 @@ console.log('[NI-TB] 穿书模式模块已加载');
                         const raw = msg.send_date || msg.date || msg.timestamp;
                         let d = raw ? new Date(raw) : null;
                         if (!d || isNaN(d)) d = new Date();
-                        el.textContent = d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate())
-                                       + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+                        el.textContent = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())
+                            + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
                         return;
                     }
                 }
             }
-        } catch(e) {}
+        } catch (e) { }
         const now = new Date();
-        el.textContent = now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate())
-                       + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes());
+        el.textContent = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate())
+            + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes());
     }
 
     // ── 更新预览节点；只有列表明确选点时才提交后台节点并归档前序节点 ──
@@ -5502,7 +5552,7 @@ console.log('[NI-TB] 穿书模式模块已加载');
             const r = q('ni-pop-nr' + newIdx);
             if (!r) return;
             const g = r.parentElement, l = q('ni-pop-node-list');
-            if (l) l.scrollTop += (g.getBoundingClientRect().top - l.getBoundingClientRect().top) - (l.clientHeight/2) + (g.offsetHeight/2);
+            if (l) l.scrollTop += (g.getBoundingClientRect().top - l.getBoundingClientRect().top) - (l.clientHeight / 2) + (g.offsetHeight / 2);
         });
     }
 
@@ -5539,12 +5589,12 @@ console.log('[NI-TB] 穿书模式模块已加载');
         const wrap = q('ni-popup-wrap');
         if (wrap) {
             wrap.style.position = 'fixed';
-            wrap.style.left     = '0';
-            wrap.style.top      = '0';
-            wrap.style.width    = window.innerWidth  + 'px';
-            wrap.style.height   = window.innerHeight + 'px';
-            wrap.style.display  = 'flex';
-            wrap.style.alignItems    = 'center';
+            wrap.style.left = '0';
+            wrap.style.top = '0';
+            wrap.style.width = window.innerWidth + 'px';
+            wrap.style.height = window.innerHeight + 'px';
+            wrap.style.display = 'flex';
+            wrap.style.alignItems = 'center';
             wrap.style.justifyContent = 'center';
             wrap.style.pointerEvents = 'auto';
         }
@@ -5566,20 +5616,20 @@ console.log('[NI-TB] 穿书模式模块已加载');
             stageDrop.innerHTML = '';
         }
     }
-    window.niPopOpen  = niPopOpen;
+    window.niPopOpen = niPopOpen;
     window.niPopClose = niPopClose;
 
     // ── 显示/隐藏浮动按钮──
     function niPopSetVisible(show) {
         const fab = q('ni-fab'), ring = q('ni-fab-ring');
-        if (fab)  fab.style.display  = show ? 'flex' : 'none';
+        if (fab) fab.style.display = show ? 'flex' : 'none';
         if (ring) ring.style.display = show ? 'block' : 'none';
     }
     window.niPopSetVisible = niPopSetVisible;
 
     // ── FAB 拖动 ──
     function niPopInitFab() {
-        const fab  = q('ni-fab');
+        const fab = q('ni-fab');
         const ring = q('ni-fab-ring');
         if (!fab) return;
 
@@ -5592,11 +5642,11 @@ console.log('[NI-TB] 穿书模式模块已加载');
             bx = Math.max(0, Math.min(_win.innerWidth - 40, bx));
             by = Math.max(0, Math.min(_win.innerHeight - 40, by));
             fab.style.left = bx + 'px';
-            fab.style.top  = by + 'px';
+            fab.style.top = by + 'px';
             if (ring) {
-                ring.style.left   = (bx - 6) + 'px';
-                ring.style.top    = (by - 6) + 'px';
-                ring.style.width  = '52px';
+                ring.style.left = (bx - 6) + 'px';
+                ring.style.top = (by - 6) + 'px';
+                ring.style.width = '52px';
                 ring.style.height = '52px';
             }
         }
@@ -5635,10 +5685,10 @@ console.log('[NI-TB] 穿书模式模块已加载');
         fab.addEventListener('mousedown', startDrag);
         fab.addEventListener('touchstart', startDrag, { passive: false });
         _win.addEventListener('resize', applyPos);
-        _win.addEventListener('resize', function() {
+        _win.addEventListener('resize', function () {
             const wrap = q('ni-popup-wrap');
             if (wrap && _popOpen) {
-                wrap.style.width  = _win.innerWidth  + 'px';
+                wrap.style.width = _win.innerWidth + 'px';
                 wrap.style.height = _win.innerHeight + 'px';
             }
         });
@@ -5841,25 +5891,25 @@ console.log('[NI-TB] 穿书模式模块已加载');
         // 从主插件读取推演结果：优先从 window._niS，兼容旧路径
         const _S = (typeof window._niS !== 'undefined') ? window._niS
             : ((typeof extension_settings !== 'undefined' && typeof EXT_NAME !== 'undefined')
-               ? extension_settings[EXT_NAME] : null);
+                ? extension_settings[EXT_NAME] : null);
         const results = _S?.tbLastInfer;
         if (Array.isArray(results) && results.length) {
             const items = q('ni-pop-infer-items');
             if (items) {
                 items.innerHTML = '';
                 results.forEach((d, i) => {
-                    const tagMap = { canon:'ni-itag-canon', diverge:'ni-itag-diverge', break:'ni-itag-break' };
+                    const tagMap = { canon: 'ni-itag-canon', diverge: 'ni-itag-diverge', break: 'ni-itag-break' };
                     const title = niApplyUserSubstitution(d.title || '');
                     const desc = niApplyUserSubstitution(d.desc || d.description || '');
                     const el = document.createElement('div');
                     el.className = 'ni-infer-item ni-fade-in';
                     el.dataset.desc = desc;
                     el.innerHTML =
-                        '<div class="ni-infer-idx">' + (i+1) + '</div>' +
+                        '<div class="ni-infer-idx">' + (i + 1) + '</div>' +
                         '<div class="ni-infer-body">' +
-                          '<span class="ni-infer-tag ' + (tagMap[d.tag] || 'ni-itag-canon') + '">' + niPopEsc(d.tagLabel || d.tl || d.label || '') + '</span>' +
-                          '<div class="ni-infer-title">' + niPopEsc(title) + '</div>' +
-                          '<div class="ni-infer-desc">' + niPopEsc(desc) + '</div>' +
+                        '<span class="ni-infer-tag ' + (tagMap[d.tag] || 'ni-itag-canon') + '">' + niPopEsc(d.tagLabel || d.tl || d.label || '') + '</span>' +
+                        '<div class="ni-infer-title">' + niPopEsc(title) + '</div>' +
+                        '<div class="ni-infer-desc">' + niPopEsc(desc) + '</div>' +
                         '</div>';
                     items.appendChild(el);
                 });
@@ -5915,10 +5965,10 @@ console.log('[NI-TB] 穿书模式模块已加载');
         niPopInjectCSS();
         // ── 将 FAB、FAB-ring 和弹窗容器移动到主页面 body──
         const fabRing = document.getElementById('ni-fab-ring');
-        const fab     = document.getElementById('ni-fab');
+        const fab = document.getElementById('ni-fab');
         const popWrap = document.getElementById('ni-popup-wrap');
         if (fabRing && fabRing.parentElement !== _niPopDoc.body) _niPopDoc.body.appendChild(fabRing);
-        if (fab     && fab.parentElement     !== _niPopDoc.body) _niPopDoc.body.appendChild(fab);
+        if (fab && fab.parentElement !== _niPopDoc.body) _niPopDoc.body.appendChild(fab);
         if (popWrap && popWrap.parentElement !== _niPopDoc.body) _niPopDoc.body.appendChild(popWrap);
 
         niPopInitFab();
@@ -5931,7 +5981,7 @@ console.log('[NI-TB] 穿书模式模块已加载');
 
     // ── 监听穿书开关和弹窗选项变化，自动同步 FAB 显隐 ──
     // 直接在此处更新设置，防止 niTbInitSettingsUI 尚未调用时设置值未同步
-    document.addEventListener('change', function(e) {
+    document.addEventListener('change', function (e) {
         if (!e.target) return;
         const _S = (typeof extension_settings !== 'undefined' && typeof EXT_NAME !== 'undefined')
             ? extension_settings[EXT_NAME] : null;

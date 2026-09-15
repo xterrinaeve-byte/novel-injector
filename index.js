@@ -414,6 +414,7 @@ function niResetChunkDerivedState() {
     S.skipCurrentChunk = false;
     S.characters = [];
     S.plots = { main: [], sub: [], pivot: [] };
+    S.plotSlots = S.chunks.map(() => ({ main: [], sub: [], pivot: [] })); // 新增：按分段准备的独立暂存柜
     niResetStageVectorState();
 }
 
@@ -2072,14 +2073,11 @@ async function dbRemapSourceChunkIndices(indexMap) {
     });
 }
 
+
 function mergePlots(incoming, chunkIndex) {
-    // stageMap key = main数组下标，不能用 chunkIndex 直接查。
-    // 这里只记录 _chunkIdx，stageIdx 由 niConfirmStageMap 事后统一回填。
-    // 若阶段已划分且当前节点是续跑补充的，通过已有节点的 _chunkIdx 反查阶段号。
     let stageIdx = null;
     if (S.stageMapN > 0) {
-        // 在已有节点中找同 chunkIndex 的节点，借用其 stageIdx
-        const ref = [...(S.plots.main || []), ...(S.plots.sub || []), ...(S.plots.pivot || [])]
+        const ref = [...(S.plots?.main || []), ...(S.plots?.sub || []), ...(S.plots?.pivot || [])]
             .find(p => p._chunkIdx === chunkIndex && p.stageIdx != null);
         if (ref) {
             stageIdx = ref.stageIdx;
@@ -2095,6 +2093,9 @@ function mergePlots(incoming, chunkIndex) {
                 niPlotTypeRank(a) - niPlotTypeRank(b) ||
                 ai - bi;
         });
+
+    const currentSlot = { main: [], sub: [], pivot: [] };
+
     plots.forEach((p, localIndex) => {
         const bucket = ['main', 'sub', 'pivot'].includes(p.type) ? p.type : 'main';
         const chunkOrder = niPlotChunkOrder(p, p._sourceIdx ?? localIndex);
@@ -2115,11 +2116,30 @@ function mergePlots(incoming, chunkIndex) {
         const manualOrder = niPlotManualOrder(p);
         if (manualOrder != null) newPlot._manualOrder = manualOrder;
         niEnsurePlotNodeId(newPlot, bucket, localIndex);
-        S.plots[bucket].push({
-            ...newPlot,
-        });
+        currentSlot[bucket].push(newPlot);
     });
+
+    if (!S.plotSlots) S.plotSlots = [];
+    S.plotSlots[chunkIndex] = currentSlot;
+
+    commitAllPlotsInOrder();
 }
+
+function commitAllPlotsInOrder() {
+    S.plots = { main: [], sub: [], pivot: [] };
+    const totalSlots = Math.max(S.chunks?.length || 0, S.plotSlots?.length || 0);
+
+    for (let ci = 0; ci < totalSlots; ci++) {
+        const slot = S.plotSlots?.[ci];
+        if (!slot) continue;
+        ['main', 'sub', 'pivot'].forEach(type => {
+            if (Array.isArray(slot[type])) {
+                S.plots[type].push(...slot[type]);
+            }
+        });
+    }
+}
+
 
 // ============================================================
 // 剧情渲染

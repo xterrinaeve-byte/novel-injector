@@ -1697,6 +1697,7 @@ const {
     niToggleCharDeleteSelection,
     niToggleShowEmptyStages,
     niGetShowEmptyStages,
+    niAnalyzeAndMergeCharacters
 } = createStoryController({
     state: S,
     query: q,

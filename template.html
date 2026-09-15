@@ -1141,6 +1141,10 @@
             </div>
             <div class="ni-vdiv"></div>
             <div class="ni-pm-group">
+              <!-- 新增：合并修复按钮 -->
+              <button type="button" class="ni-char-pm-btn" id="ni-btn-merge-char" title="解决一个角色被拆成多个人的问题">
+                <i class="ti ti-git-merge"></i> 合并修复
+              </button>
               <button class="ni-char-pm-btn" id="ni-btn-add-char" title="添加角色"><i class="ti ti-plus"></i></button>
               <button class="ni-char-pm-btn" id="ni-btn-del-char" title="删除角色"><i class="ti ti-minus"></i></button>
             </div>
@@ -2621,6 +2625,31 @@
       <div class="ni-barcode-txt">— 谢谢惠顾 —</div>
       <div class="ni-rcp-bot-edge"></div>
       <div class="ni-sticker"></div>
+    </div>
+  </div>
+</div>
+<!-- 角色合并修复弹窗 -->
+<div id="ni-merge-char-modal" class="ni-modal-bg" style="display:none;">
+  <div class="ni-modal" style="width: 360px;">
+    <div class="ni-modal-title">
+      <i class="ti ti-git-merge"></i> 角色同人合并修复
+    </div>
+    
+    <label class="ni-modal-label">1. 选择怀疑是同一人的角色（至少选2个）：</label>
+    <div id="ni-merge-char-candidates" style="max-height: 140px; overflow-y: auto; border: 0.5px solid var(--color-border-secondary); padding: 6px; border-radius: 4px; background: var(--color-background-primary); margin-bottom: 8px;">
+      <!-- JS 会在这里自动生成打勾的角色列表 -->
+    </div>
+
+    <label class="ni-modal-label">2. 选择参考剧情阶段：</label>
+    <select id="ni-merge-stage-select" class="ni-modal-input" style="margin-bottom: 10px;">
+      <!-- JS 会自动填充阶段选项 -->
+    </select>
+
+    <div id="ni-merge-result-tip" style="font-size: 11px; color: var(--color-text-secondary); margin-bottom: 10px; min-height: 16px;"></div>
+
+    <div class="ni-modal-btns">
+      <button type="button" class="ni-modal-cancel" id="ni-merge-cancel-btn">取消</button>
+      <button type="button" class="ni-modal-confirm" id="ni-merge-run-btn">开始分析合并</button>
     </div>
   </div>
 </div>

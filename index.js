@@ -4413,6 +4413,52 @@ jQuery(async () => {
             modal.style.display = 'flex';
         }
     });
+
+    // 打开合并弹窗
+    $app.on('click', '#ni-btn-merge-char', () => {
+        const modal = q('#ni-merge-char-modal');
+        const candidateBox = q('#ni-merge-char-candidates');
+        const stageSel = q('#ni-merge-stage-select');
+        if (!modal || !candidateBox || !stageSel) return;
+
+        // 填充角色多选框列表
+        candidateBox.innerHTML = (S.characters || []).map((c, idx) => `
+            <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px; font-size:12px; cursor:pointer;">
+                <input type="checkbox" class="ni-merge-chk" value="${idx}">
+                <span>${c.name} <small style="opacity:0.6;">(${c.identity || '无身份'})</small></span>
+            </label>
+        `).join('') || '<div style="font-size:12px; color:#888;">暂无角色</div>';
+
+        // 填充阶段下拉列表
+        stageSel.innerHTML = '<option value="">全书综合（不限阶段）</option>' + 
+            Array.from({ length: S.stageMapN || 1 }, (_, k) => k + 1)
+                .map(s => `<option value="${s}">第 ${s} 阶段剧情</option>`).join('');
+
+        q('#ni-merge-result-tip').textContent = '';
+        modal.style.display = 'flex';
+    });
+
+    // 弹窗取消
+    $app.on('click', '#ni-merge-cancel-btn', () => {
+        q('#ni-merge-char-modal').style.display = 'none';
+    });
+
+    // 点击执行合并
+    $app.on('click', '#ni-merge-run-btn', () => {
+        const checkedBoxes = qa('.ni-merge-chk:checked');
+        const indices = Array.from(checkedBoxes).map(cb => parseInt(cb.value, 10));
+        const stageIdx = parseInt(q('#ni-merge-stage-select')?.value, 10) || 1;
+
+        if (indices.length < 2) {
+            alert('请至少勾选两个疑似重复的角色！');
+            return;
+        }
+
+        niAnalyzeAndMergeCharacters({
+            selectedCharIndices: indices,
+            stageIdx: stageIdx
+        });
+    });
     // 弹窗取消
     $app.on('click', '#ni-add-char-cancel', () => {
         const modal = q('#ni-add-char-modal');

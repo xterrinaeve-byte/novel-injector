@@ -3297,8 +3297,10 @@ async function onPromptReady(eventData) {
 
 // 辅助：执行注入，失败则降级到追加 system 消息
     function doInject(key, content, pos, depth, role, opts = {}) {
-        // 【新增开关】：如果位置被设为 -1，直接拦截不注入！
-        if (pos === -1 || Number(pos) === -1) return;
+        // 【核心拦截】：只要 pos 为 -1、"-1" 或小于 0，彻底切断注入！
+        if (pos === -1 || Number(pos) === -1 || Number(pos) < 0) {
+            return;
+        }
 
         if (opts.applyUserSub !== false) content = niApplyUserSubstitution(content);
         if (!content.trim()) return;
@@ -3323,14 +3325,14 @@ async function onPromptReady(eventData) {
     if (!chat.length) return;
     niLoadDeviationStateFromChat({ allowLegacyMigration: false, collapsed: true, syncUI: false });
 
-    // 读取各自的注入配置
-    const vecPos = cfg.vecInjPos ?? DEFAULT_SETTINGS.vecInjPos;
+// 读取各自的注入配置（强制转为数字）
+    const vecPos = Number(cfg.vecInjPos ?? DEFAULT_SETTINGS.vecInjPos);
     const vecDepth = cfg.injDepth ?? DEFAULT_SETTINGS.injDepth;
     const vecRole = cfg.vecInjRole ?? DEFAULT_SETTINGS.vecInjRole;
-    const charPos = cfg.charInjPos ?? DEFAULT_SETTINGS.charInjPos;
+    const charPos = Number(cfg.charInjPos ?? DEFAULT_SETTINGS.charInjPos);
     const charDepth = cfg.charInjDepth ?? DEFAULT_SETTINGS.charInjDepth;
     const charRole = cfg.charInjRole ?? DEFAULT_SETTINGS.charInjRole;
-    const plotPos = cfg.plotInjPos ?? DEFAULT_SETTINGS.plotInjPos;
+    const plotPos = Number(cfg.plotInjPos ?? DEFAULT_SETTINGS.plotInjPos);
     const plotDepth = cfg.plotInjDepth ?? DEFAULT_SETTINGS.plotInjDepth;
     const plotRole = cfg.plotInjRole ?? DEFAULT_SETTINGS.plotInjRole;
 
@@ -3465,7 +3467,7 @@ async function onPromptReady(eventData) {
     }
 
     // ④ 世界设定注入
-    const worldPos = cfg.worldInjPos ?? DEFAULT_SETTINGS.worldInjPos;
+    const worldPos = Number(cfg.worldInjPos ?? DEFAULT_SETTINGS.worldInjPos);
     const worldDepth = cfg.worldInjDepth ?? DEFAULT_SETTINGS.worldInjDepth;
     const worldRole = cfg.worldInjRole ?? DEFAULT_SETTINGS.worldInjRole;
     const worldContent = niBuildWorldInjectionText(niGetWorldCategories());
@@ -3474,7 +3476,7 @@ if (worldPos !== -1 && worldContent) {
     }
 
 // ── 偏差注入 ──
-    const devPos = cfg.devInjPos ?? DEFAULT_SETTINGS.devInjPos;
+    const devPos = Number(cfg.devInjPos ?? DEFAULT_SETTINGS.devInjPos);
     const deviationGuide = niGetDeviationGuideText({ preferUI: true }).trim();
     if (devPos !== -1 && deviationGuide) {
         S.deviationGuide = deviationGuide;
@@ -3485,7 +3487,7 @@ if (worldPos !== -1 && worldContent) {
     }
 
 // ── 文风注入 ──
-    const stylePos = cfg.styleInjPos ?? DEFAULT_SETTINGS.styleInjPos;
+    const stylePos = Number(cfg.styleInjPos ?? DEFAULT_SETTINGS.styleInjPos);
     const styleGuide = (q('#ni-style-result')?.value || S.styleGuide || '').trim();
     if (stylePos !== -1 && styleGuide) {
         const stylePos = cfg.styleInjPos ?? DEFAULT_SETTINGS.styleInjPos;

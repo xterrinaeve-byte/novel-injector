@@ -3295,8 +3295,11 @@ async function onPromptReady(eventData) {
         console.warn('[NI] 无法导入 setExtensionPrompt:', e);
     }
 
-    // 辅助：执行注入，失败则降级到追加 system 消息
+// 辅助：执行注入，失败则降级到追加 system 消息
     function doInject(key, content, pos, depth, role, opts = {}) {
+        // 【新增开关】：如果位置被设为 -1，直接拦截不注入！
+        if (pos === -1 || Number(pos) === -1) return;
+
         if (opts.applyUserSub !== false) content = niApplyUserSubstitution(content);
         if (!content.trim()) return;
         if (eventData?.chat && Array.isArray(eventData.chat)) {
@@ -3341,8 +3344,8 @@ async function onPromptReady(eventData) {
         directStageInjectionStages,
     } = stageInjectionPlan;
 
-    // ① 向量块注入
-    if (!vectorInjectionDisabled && (
+// ① 向量块注入（如果位置选为 -1 则不注入）
+    if (vecPos !== -1 && !vectorInjectionDisabled && (
         vectorRecallScope.currentStages.length || vectorRecallScope.historicalStages.length
     )) {
         const nodeRecallContext = curTbNode
@@ -3386,8 +3389,8 @@ async function onPromptReady(eventData) {
         }
     }
 
-    // ② 阶段剧情注入
-    if (directStageInjectionStages.length) {
+// ② 阶段剧情注入（如果位置选为 -1 则不注入）
+    if (plotPos !== -1 && directStageInjectionStages.length) {
         const rawMode = niNormalizeRawInjMode(cfg.rawInjMode);
         if (rawMode === 'compressed') {
             await niEnsureChunksLoaded();
@@ -3415,9 +3418,10 @@ async function onPromptReady(eventData) {
         niUpdateStageInjectionBudgetNote(null, { visible: false });
     }
 
-    // ③ 角色人设注入
+// ③ 角色人设注入
     const charLines = [];
-    if (S.characters.length) {
+    if (charPos === -1) { /* 用户关闭了角色人设总注入 */ }
+    else if (S.characters.length) {
         const userSubCfg = niGetUserSubConfig();
         S.characters.forEach((c, idx) => {
             if (!c.name) return;
@@ -3465,13 +3469,14 @@ async function onPromptReady(eventData) {
     const worldDepth = cfg.worldInjDepth ?? DEFAULT_SETTINGS.worldInjDepth;
     const worldRole = cfg.worldInjRole ?? DEFAULT_SETTINGS.worldInjRole;
     const worldContent = niBuildWorldInjectionText(niGetWorldCategories());
-    if (worldContent) {
+if (worldPos !== -1 && worldContent) {
         doInject(`${EXT_NAME}_world`, worldContent, worldPos, worldDepth, worldRole);
     }
 
-    // ── 偏差注入 ──
+// ── 偏差注入 ──
+    const devPos = cfg.devInjPos ?? DEFAULT_SETTINGS.devInjPos;
     const deviationGuide = niGetDeviationGuideText({ preferUI: true }).trim();
-    if (deviationGuide) {
+    if (devPos !== -1 && deviationGuide) {
         S.deviationGuide = deviationGuide;
         const devPos = cfg.devInjPos ?? DEFAULT_SETTINGS.devInjPos;
         const devDepth = cfg.devInjDepth ?? DEFAULT_SETTINGS.devInjDepth;
@@ -3479,9 +3484,10 @@ async function onPromptReady(eventData) {
         doInject(`${EXT_NAME}_dev`, `[当前剧情偏差约束]\n${deviationGuide}\n[/当前剧情偏差约束]`, devPos, devDepth, devRole);
     }
 
-    // ── 文风注入 ──
+// ── 文风注入 ──
+    const stylePos = cfg.styleInjPos ?? DEFAULT_SETTINGS.styleInjPos;
     const styleGuide = (q('#ni-style-result')?.value || S.styleGuide || '').trim();
-    if (styleGuide) {
+    if (stylePos !== -1 && styleGuide) {
         const stylePos = cfg.styleInjPos ?? DEFAULT_SETTINGS.styleInjPos;
         const styleDepth = cfg.styleInjDepth ?? DEFAULT_SETTINGS.styleInjDepth;
         const styleRole = cfg.styleInjRole ?? DEFAULT_SETTINGS.styleInjRole;
